@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf8 -*
+
 import oerplib
 import shutil
 import datetime                                                                                                                                                                           
