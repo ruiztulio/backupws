@@ -51,9 +51,8 @@ def dump_database(dest_folder, database_name, super_user_pass, host, port):
     dump_name = os.path.join(DEST_FOLDER, 'database_dump.b64')
     oerp = oerplib.OERP(host, protocol='xmlrpc', port=port, timeout=3000)
     binary_data = oerp.db.dump(super_user_pass, database_name)
-    fout = open(dump_name, "w")
-    fout.write(binary_data)
-    fout.close()
+    with open(dump_name, "w") as fout:
+        fout.write(binary_data)
     return dump_name
 
 def backup_databases(databases_list, reason=False):

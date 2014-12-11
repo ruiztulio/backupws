@@ -56,9 +56,8 @@ def restore_database(dest_folder, database_name, super_user_pass, host, port):
     logger.info("Restoring database %s", database_name)
     dump_name = os.path.join(dest_folder, 'database_dump.b64')
     logger.debug("Restore dump - reading file %s", dump_name)
-    fin = open(dump_name, "r")
-    b64_str = fin.read()
-    fin.close()
+    with open(dump_name, "r") as fin:
+        b64_str = fin.read()
     oerp = oerplib.OERP(host, protocol='xmlrpc', port=port, timeout=3000)
     oerp.db.restore(super_user_pass, database_name, b64_str)
 
