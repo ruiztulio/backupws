@@ -11,7 +11,7 @@ import logging
 import argparse
 
 logging.basicConfig(level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('backup')
 
 parser = argparse.ArgumentParser()
@@ -35,18 +35,27 @@ PASSWORD = 'admin'
 FILES = []
 
 def clean_files(files):
-    for f in files:
-        os.remove(f)
+    """
+    Remove unnecesary and temporary files
+    """
+    for fname in files:
+        os.remove(fname)
 
 def compress_files(name, files):
+    """
+    Compress a file, set of files or a folder in tar.bz2 format
+    """
     logger.debug("Generating compressed file: %s", name)
     bz2_file = bz2.BZ2File(os.path.join(BACKUP_DIR, '%s.tar.bz2'%name), mode='w', compresslevel=9)
     with tarfile.open(mode='w', fileobj=bz2_file) as tar_bz2_file:
-        for f in files:
-            tar_bz2_file.add(f, os.path.join(name, os.path.basename(f)))
+        for fname in files:
+            tar_bz2_file.add(fname, os.path.join(name, os.path.basename(fname)))
     bz2_file.close()
 
 def dump_database(dest_folder, database_name, super_user_pass, host, port):
+    """
+    Dump database using Oerplib in Base64 format
+    """
     logger.debug("Dumping database %s into %s folder", database_name, dest_folder)
     dump_name = os.path.join(DEST_FOLDER, 'database_dump.b64')
     oerp = oerplib.OERP(host, protocol='xmlrpc', port=port, timeout=3000)
@@ -56,15 +65,19 @@ def dump_database(dest_folder, database_name, super_user_pass, host, port):
     return dump_name
 
 def backup_databases(databases_list, reason=False):
+    """
+    Receive a list of databases and backup up them all
+    """
     for database in databases_list:
         if reason:
-            file_name = '%s_%s_%s'%(database, reason, datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
+            file_name = '%s_%s_%s'% \
+                        (database, reason, datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
         else:
             file_name = '%s_%s'%(database, datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
         logger.info("Dumping database")
-        db = dump_database(DEST_FOLDER, database, USER, HOST, PORT)
-        FILES.append(os.path.join(DEST_FOLDER, db))
-        logger.info("Compressing dump %s", db)
+        dbase = dump_database(DEST_FOLDER, database, USER, HOST, PORT)
+        FILES.append(os.path.join(DEST_FOLDER, dbase))
+        logger.info("Compressing dump %s", dbase)
         compress_files(file_name, FILES)
     clean_files(FILES)
 
