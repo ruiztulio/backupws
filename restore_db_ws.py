@@ -1,9 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
+"""
+This script is a PoC to resore Odoo DB dumps using Oerplib and
+works with backup_db_ws
+"""
 import oerplib
 import shutil
-import datetime                                                                                                                                                                           
 import tarfile
 import os
 import bz2
@@ -11,7 +13,7 @@ import logging
 import argparse
 
 logging.basicConfig(level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('backup')
 
 parser = argparse.ArgumentParser()
@@ -32,6 +34,9 @@ USER = 'admin'
 PASSWORD = 'admin'
 
 def clean_files(files):
+    """
+    Remove unnecesary and temporary files
+    """
     for f in files:
         if os.path.isfile(f):
             os.remove(f)
@@ -40,6 +45,9 @@ def clean_files(files):
 
 
 def decompress_files(name, dest_folder):
+    """
+    Decompress a file, set of files or a folder in tar.bz2 format
+    """
     logger.debug("Decompressing file: %s", name)
     bz2_file = bz2.BZ2File(os.path.join(BACKUP_DIR, name), mode='r')
     tar = tarfile.open(mode='r', fileobj=bz2_file)
@@ -48,11 +56,14 @@ def decompress_files(name, dest_folder):
     bz2_file.close()
     logger.debug("Destination folder: %s", dest_folder)
     if name.endswith('tar.bz2') or name.endswith('tar.gz'):
-        dest_folder =  os.path.join(dest_folder, name.split('.')[0])
+        dest_folder = os.path.join(dest_folder, name.split('.')[0])
     logger.debug("Destination folder: %s", dest_folder)
     return dest_folder
 
 def restore_database(dest_folder, database_name, super_user_pass, host, port):
+    """
+    Restore database using Oerplib in Base64 format
+    """
     logger.info("Restoring database %s", database_name)
     dump_name = os.path.join(dest_folder, 'database_dump.b64')
     logger.debug("Restore dump - reading file %s", dump_name)
