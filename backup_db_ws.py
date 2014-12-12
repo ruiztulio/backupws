@@ -1,6 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
+"""
+This script is a PoC to make Odoo DB dumps using Oerplib
+"""
 import oerplib
 import shutil
 import datetime                                                                                                                                                                           
