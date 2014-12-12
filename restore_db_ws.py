@@ -37,11 +37,11 @@ def clean_files(files):
     """
     Remove unnecesary and temporary files
     """
-    for f in files:
-        if os.path.isfile(f):
-            os.remove(f)
-        elif os.path.isdir(f):
-            shutil.rmtree(f)
+    for fname in files:
+        if os.path.isfile(fname):
+            os.remove(fname)
+        elif os.path.isdir(fname):
+            shutil.rmtree(fname)
 
 
 def decompress_files(name, dest_folder):
@@ -56,7 +56,8 @@ def decompress_files(name, dest_folder):
     bz2_file.close()
     logger.debug("Destination folder: %s", dest_folder)
     if name.endswith('tar.bz2') or name.endswith('tar.gz'):
-        dest_folder = os.path.join(dest_folder, name.split('.')[0])
+        fname = os.path.basename(name)
+        dest_folder = os.path.join(dest_folder, fname.split('.')[0])
     logger.debug("Destination folder: %s", dest_folder)
     return dest_folder
 
