@@ -58,6 +58,6 @@ if pac_ids:
 
 cron_ids = oerp.search('ir.cron', [('model', '<>', 'osv_memory.autovacuum'), ('active', '=', True)])
 if cron_ids:
-    oerp.write('ir.cron', pac_ids, {'active': False})
+    oerp.write('ir.cron', cron_ids, {'active': False})
 
 
