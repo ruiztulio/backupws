@@ -37,27 +37,34 @@ try:
 except socket.error as e:
     if e.errno == 111:
         logger.critical('Cannot connect to OpenERP Server')
-        logger.critical('Check instance addess and server')
+        logger.critical('Check instance address and server')
         logger.critical('Program terminating')
         sys.exit(1)
     else:
         raise
 
+logger.info("Deactivating mail servers")
 mail_ids = oerp.search('ir.mail_server', [('active', '=', True)])
 if mail_ids:
+    logger.debug("Mail server ids %s", str(mail_ids))
     oerp.write('ir.mail_server', mail_ids, {'active': False})
 
+logger.info("Deactivating out")
 partner_ids = oerp.search('res.partner', [('opt_out', '=', False)])
 if partner_ids:
+    logger.debug("Partner ids %s", str(partner_ids))
     oerp.write('res.partner', partner_ids, {'opt_out': True})
 
-
+logger.info("Deactivating PAC params")
 pac_ids = oerp.search('params.pac', [('active', '=', True)])
 if pac_ids:
+    logger.debug("Pac ids %s", str(pac_ids))
     oerp.write('params.pac', pac_ids, {'active': False})
 
+logger.info("Deactivating cron jobs")
 cron_ids = oerp.search('ir.cron', [('model', '<>', 'osv_memory.autovacuum'), ('active', '=', True)])
 if cron_ids:
+    logger.debug("Cron ids %s", str(cron_ids))
     oerp.write('ir.cron', cron_ids, {'active': False})
 
 
