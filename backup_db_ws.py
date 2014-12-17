@@ -18,11 +18,13 @@ logger = logging.getLogger('backup')
 
 parser = argparse.ArgumentParser()
 parser.add_argument("dbs", help="Comma separated dabases names to backup", default=False)
-parser.add_argument("-t", "--temp_dir", help="", default="/tmp")
+parser.add_argument("-t", "--temp_dir", help="Temp working dir", default="/tmp")
 parser.add_argument("-d", "--backup_dir", help="Where to store backups", default=".")
-parser.add_argument("-r", "--reason", help="", default=False)
-parser.add_argument("-H", "--host", help="", default="localhost")
-parser.add_argument("-p", "--port", help="", default=8069)
+parser.add_argument("-r", "--reason", help="Reason why are toy making this backup", default=False)
+parser.add_argument("-H", "--host", help="Host running Odoo", default="localhost")
+parser.add_argument("-p", "--port", help="Odoo xmlrpc port", default=8069)
+parser.add_argument("-r", "--user", help="Odoo super user", default="admin")
+parser.add_argument("-w", "--password", help="Odoo super user pass", default="admin")
 
 
 args = parser.parse_args()
@@ -31,8 +33,8 @@ DEST_FOLDER = args.temp_dir
 BACKUP_DIR= args.backup_dir
 HOST = args.host
 PORT = args.port
-USER = 'admin'
-PASSWORD = 'admin'
+USER = args.user
+PASSWORD = args.password
 
 FILES = []
 
