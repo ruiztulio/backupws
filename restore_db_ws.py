@@ -52,12 +52,18 @@ def decompress_files(name, dest_folder):
     bz2_file = bz2.BZ2File(os.path.join(BACKUP_DIR, name), mode='r')
     tar = tarfile.open(mode='r', fileobj=bz2_file)
     tar.extractall(dest_folder)
+    name_list = tar.getmembers()
     tar.close()
     bz2_file.close()
+    for name in name_list:
+        if os.path.basename(name.name) == 'database_dump.b64':
+            base_folder = os.path.basename(name.name)
+
     logger.debug("Destination folder: %s", dest_folder)
+    logger.debug("Bakcup folder: %s", base_folder)
     if name.endswith('tar.bz2') or name.endswith('tar.gz'):
         fname = os.path.basename(name)
-        dest_folder = os.path.join(dest_folder, fname.split('.')[0])
+        dest_folder = os.path.join(dest_folder, base_folder)
     logger.debug("Destination folder: %s", dest_folder)
     return dest_folder
 
