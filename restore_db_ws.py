@@ -11,6 +11,7 @@ import os
 import bz2
 import logging
 import argparse
+import sys
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -29,7 +30,6 @@ parser.add_argument("-w", "--password", help="Odoo super user pass", default="ad
 args = parser.parse_args()
 DATABASE = args.db
 DEST_FOLDER = args.temp_dir
-BACKUP_DIR= args.backup_dir
 HOST = args.host
 PORT = args.port
 USER = args.user
@@ -81,8 +81,21 @@ def restore_database(dest_folder, database_name, super_user_pass, host, port):
     oerp = oerplib.OERP(host, protocol='xmlrpc', port=port, timeout=3000)
     oerp.db.restore(super_user_pass, database_name, b64_str)
 
+def database_exists(database_name, super_user_pass, host, port):
+    """
+    Check if a given database exists
+
+    :returns: True if database exists, False otherwise
+    """
+    logger.debug("Checking if database exists")
+    oerp = oerplib.OERP(host, protocol='xmlrpc', port=port, timeout=3000)
+    return oerp.db.db_exist(database_name)
+
 if __name__ == '__main__':
     logger.info("Starting restore process")
+    if database_exists(DATABASE, 'admin', HOST, PORT):
+        logger.error("Database %s already exits, aborting program", DATABASE)
+        sys.exit(1)
     dump_dest = decompress_files(args.file, DEST_FOLDER)
     restore_database(dump_dest, DATABASE, 'admin', HOST, PORT)
     clean_files([dump_dest])
