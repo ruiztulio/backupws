@@ -23,7 +23,7 @@ parser.add_argument("-f", "--file", help="Backup name to resore", default=False,
 parser.add_argument("-t", "--temp_dir", help="Temp working dir", default="/tmp")
 parser.add_argument("-H", "--host", help="Host running Odoo", default="localhost")
 parser.add_argument("-p", "--port", help="Odoo xmlrpc port", default=8069)
-parser.add_argument("-r", "--user", help="Odoo super user", default="admin")
+parser.add_argument("-u", "--user", help="Odoo super user", default="admin")
 parser.add_argument("-w", "--password", help="Odoo super user pass", default="admin")
 
 
@@ -51,15 +51,15 @@ def decompress_files(name, dest_folder):
     Decompress a file, set of files or a folder in tar.bz2 format
     """
     logger.debug("Decompressing file: %s", name)
-    bz2_file = bz2.BZ2File(os.path.join(BACKUP_DIR, name), mode='r')
+    bz2_file = bz2.BZ2File(name, mode='r')
     tar = tarfile.open(mode='r', fileobj=bz2_file)
     tar.extractall(dest_folder)
     name_list = tar.getmembers()
     tar.close()
     bz2_file.close()
-    for name in name_list:
-        if os.path.basename(name.name) == 'database_dump.b64':
-            base_folder = os.path.basename(name.name)
+    for fname in name_list:
+        if os.path.basename(fname.name) == 'database_dump.b64':
+            base_folder = os.path.dirname(fname.name)
 
     logger.debug("Destination folder: %s", dest_folder)
     logger.debug("Bakcup folder: %s", base_folder)

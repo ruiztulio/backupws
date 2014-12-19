@@ -23,7 +23,7 @@ parser.add_argument("-d", "--backup_dir", help="Where to store backups", default
 parser.add_argument("-r", "--reason", help="Reason why are toy making this backup", default=False)
 parser.add_argument("-H", "--host", help="Host running Odoo", default="localhost")
 parser.add_argument("-p", "--port", help="Odoo xmlrpc port", default=8069)
-parser.add_argument("-r", "--user", help="Odoo super user", default="admin")
+parser.add_argument("-u", "--user", help="Odoo super user", default="admin")
 parser.add_argument("-w", "--password", help="Odoo super user pass", default="admin")
 
 
