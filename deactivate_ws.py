@@ -1,16 +1,16 @@
  # -*- encoding: utf-8 -*- 
 import oerplib
 import logging
-import argparse
-import socket
 import sys
+import argparse
+from lib import utils
 
 logging.basicConfig(level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('backup')
 
 
-def deactivate(db_name, , super_user_login, super_user_password,
+def deactivate(db_name, super_user_login, super_user_password,
                host='localhost', port=8069):
 
     oerp = oerplib.OERP(host, protocol='xmlrpc', port=port)
@@ -78,6 +78,8 @@ def main(main_args):
     parser.add_argument("-w", "--password", help="Odoo super user pass", default="admin")
 
     args = parser.parse_args(main_args)
+    if not utils.test_connection(args.db, args.host, args.port, args.user, args.password):
+        return 1
     deactivate(args.db, args.user, args.password, args.host, args.port)
 
 

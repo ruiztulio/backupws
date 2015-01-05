@@ -5,7 +5,7 @@ import os
 import bz2
 import logging
 import oerplib
-
+import socket
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -167,3 +167,36 @@ def database_exists(database_name, host, port=8069, timeout=3000):
     logger.debug("Checking if database exists")
     oerp = oerplib.OERP(host, protocol='xmlrpc', port=port, timeout=timeout)
     return oerp.db.db_exist(database_name)
+
+def test_connection(db_name, host=False, port=8069, user=False, password=False, timeout=60):
+    """ Checks if the is connection with the instance and parameters are correct
+
+    Args:
+        db_name (str): Database name to test connection with
+        host (str): Instance server hostname or ip address
+        port (int): Instance port to connect
+        user (str): user name to test
+        password (str): User's password to test
+        timeout (int): Desired timeout for test
+    """
+    logger.info("Testing connection with '%s' host using '%s' port", host, port)
+    try:
+        oerp = oerplib.OERP(host, protocol='xmlrpc', port=port, timeout=timeout)
+        oerp_version = oerp.db.server_version()
+    except socket.error as e:
+        if e.errno == 111:
+            logger.error("Connection refused, check port number and host")
+        return False
+    else:
+        if oerp_version:
+            logger.info("An Odoo v%s server is available a linstening into %s port", oerp_version, port)
+        else:
+            logger.warn("Connection could be stablished, but for some reason version number couldn't be gotten ")
+    try:
+        user_obj = oerp.login(user, password, db_name)
+    except oerplib.error.RPCError, e:
+        logger.error("Wrong login ID or password, please check your parameters and try again")
+        return False
+    else:
+        logger.info("User '%s' could connect to the instance properly with the supplied password", user)
+    return True

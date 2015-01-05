@@ -29,6 +29,8 @@ def main(main_args):
     parser.add_argument("-w", "--password", help="Odoo super user pass", default="admin")
 
     args = parser.parse_args(main_args)
+    if not utils.test_connection(args.db, args.host, args.port, args.user, args.password):
+        return 1
     if utils.database_exists(args.db, args.host, args.port):
         logger.error("Database %s already exits, aborting program", args.db)
         return 1
