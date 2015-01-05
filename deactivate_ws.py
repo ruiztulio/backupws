@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.DEBUG,
 logger = logging.getLogger('backup')
 
 
-def deactivate(db_name, super_user_login, super_user_password,
+def deactivate(db_name, , super_user_login, super_user_password,
                host='localhost', port=8069):
 
     oerp = oerplib.OERP(host, protocol='xmlrpc', port=port)
