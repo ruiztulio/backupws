@@ -4,99 +4,40 @@
 This script is a PoC to resore Odoo DB dumps using Oerplib and
 works with backup_db_ws
 """
-import oerplib
-import shutil
-import tarfile
-import os
-import bz2
 import logging
 import argparse
 import sys
+from lib import utils
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('backup')
 
-parser = argparse.ArgumentParser()
-parser.add_argument("db", help="Database name", default=False)
-parser.add_argument("-f", "--file", help="Backup name to resore", default=False, required=True)
-parser.add_argument("-t", "--temp_dir", help="Temp working dir", default="/tmp")
-parser.add_argument("-H", "--host", help="Host running Odoo", default="localhost")
-parser.add_argument("-p", "--port", help="Odoo xmlrpc port", default=8069)
-parser.add_argument("-u", "--user", help="Odoo super user", default="admin")
-parser.add_argument("-w", "--password", help="Odoo super user pass", default="admin")
 
 
-args = parser.parse_args()
-DATABASE = args.db
-DEST_FOLDER = args.temp_dir
-HOST = args.host
-PORT = args.port
-USER = args.user
-PASSWORD = args.password
 
-def clean_files(files):
+def main(main_args):
+    """ Main function
     """
-    Remove unnecesary and temporary files
-    """
-    for fname in files:
-        if os.path.isfile(fname):
-            os.remove(fname)
-        elif os.path.isdir(fname):
-            shutil.rmtree(fname)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("db", help="Database name", default=False)
+    parser.add_argument("-f", "--file", help="Backup name to resore", default=False, required=True)
+    parser.add_argument("-t", "--temp_dir", help="Temp working dir", default="/tmp")
+    parser.add_argument("-H", "--host", help="Host running Odoo", default="localhost")
+    parser.add_argument("-p", "--port", help="Odoo xmlrpc port", default=8069)
+    parser.add_argument("-u", "--user", help="Odoo super user", default="admin")
+    parser.add_argument("-w", "--password", help="Odoo super user pass", default="admin")
 
-
-def decompress_files(name, dest_folder):
-    """
-    Decompress a file, set of files or a folder in tar.bz2 format
-    """
-    logger.debug("Decompressing file: %s", name)
-    bz2_file = bz2.BZ2File(name, mode='r')
-    tar = tarfile.open(mode='r', fileobj=bz2_file)
-    tar.extractall(dest_folder)
-    name_list = tar.getmembers()
-    tar.close()
-    bz2_file.close()
-    for fname in name_list:
-        if os.path.basename(fname.name) == 'database_dump.b64':
-            base_folder = os.path.dirname(fname.name)
-
-    logger.debug("Destination folder: %s", dest_folder)
-    logger.debug("Bakcup folder: %s", base_folder)
-    if name.endswith('tar.bz2') or name.endswith('tar.gz'):
-        fname = os.path.basename(name)
-        dest_folder = os.path.join(dest_folder, base_folder)
-    logger.debug("Destination folder: %s", dest_folder)
-    return dest_folder
-
-def restore_database(dest_folder, database_name, super_user_pass, host, port):
-    """
-    Restore database using Oerplib in Base64 format
-    """
-    logger.info("Restoring database %s", database_name)
-    dump_name = os.path.join(dest_folder, 'database_dump.b64')
-    logger.debug("Restore dump - reading file %s", dump_name)
-    with open(dump_name, "r") as fin:
-        b64_str = fin.read()
-    oerp = oerplib.OERP(host, protocol='xmlrpc', port=port, timeout=3000)
-    oerp.db.restore(super_user_pass, database_name, b64_str)
-
-def database_exists(database_name, super_user_pass, host, port):
-    """
-    Check if a given database exists
-
-    :returns: True if database exists, False otherwise
-    """
-    logger.debug("Checking if database exists")
-    oerp = oerplib.OERP(host, protocol='xmlrpc', port=port, timeout=3000)
-    return oerp.db.db_exist(database_name)
+    args = parser.parse_args(main_args)
+    if utils.database_exists(args.db, args.host, args.port):
+        logger.error("Database %s already exits, aborting program", args.db)
+        return 1
+    dump_dest = utils.decompress_files(args.file, args.temp_dir)
+    utils.restore_database(dump_dest, args.db, args.password, args.host, args.port)
+    utils.clean_files([dump_dest])
+    return 0
 
 if __name__ == '__main__':
     logger.info("Starting restore process")
-    if database_exists(DATABASE, 'admin', HOST, PORT):
-        logger.error("Database %s already exits, aborting program", DATABASE)
-        sys.exit(1)
-    dump_dest = decompress_files(args.file, DEST_FOLDER)
-    restore_database(dump_dest, DATABASE, 'admin', HOST, PORT)
-    clean_files([dump_dest])
+    sys.exit(main(sys.argv[1:]))
     logger.info("Resore process has finished")

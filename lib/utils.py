@@ -133,3 +133,37 @@ def backup_databases(databases_list, dest_folder,
         logger.info("Dumping database")
         backup_database(database, dest_folder, user, password, host, port, reason, tmp_dir)
 
+def restore_database(dest_folder, database_name, super_user_pass, host, port):
+    """ Restore database using Oerplib in Base64 format
+
+    Args:
+        dest_folder (str): Folder where the backup is stored
+        database_name (str): The database name that will be created to restore the dump
+        super_user_pass (str): Super user password of the instance
+        host (str): Hostname or ip where the Odoo instance is running
+        port (int): Port number where the instance is llinstening
+    """
+    logger.info("Restoring database %s", database_name)
+    dump_name = os.path.join(dest_folder, 'database_dump.b64')
+    logger.debug("Restore dump - reading file %s", dump_name)
+    with open(dump_name, "r") as fin:
+        b64_str = fin.read()
+    oerp = oerplib.OERP(host, protocol='xmlrpc', port=port, timeout=3000)
+    oerp.db.restore(super_user_pass, database_name, b64_str)
+
+def database_exists(database_name, host, port=8069, timeout=3000):
+    """ Check if a given database exists
+
+    Args:
+        database_name (str): Database name to be checked
+        host (str): Hostname or ip where the Odoo instance is running
+        port (int): Integer value specifying the port where
+                    the instance is serving xmlrpc, default is 8069
+        timeout (int): Timeout value in secs
+
+    Returns:
+        True if database exists, False otherwise
+    """
+    logger.debug("Checking if database exists")
+    oerp = oerplib.OERP(host, protocol='xmlrpc', port=port, timeout=timeout)
+    return oerp.db.db_exist(database_name)
