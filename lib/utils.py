@@ -200,7 +200,7 @@ def test_connection(db_name, host=False, port=8069, user=False,
                         "but for some reason version number couldn't be gotten")
     if not only_connection:
         try:
-            oerp.login(user, "password", "test_restore_01")
+            oerp.login(user, password, db_name)
         except oerplib.error.RPCError as error_obj:
             logger.error("%s, please check your parameters and try again", error_obj.message)
             return False
