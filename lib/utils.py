@@ -132,7 +132,6 @@ def backup_databases(databases_list, dest_folder,
         databases_list (list): The database list name that will be 
     """
     for database in databases_list:
-        logger.info("Dumping database")
         backup_database(database, dest_folder, user, password, host, port, reason, tmp_dir)
 
 def restore_database(dest_folder, database_name, super_user_pass, host, port):
@@ -170,7 +169,8 @@ def database_exists(database_name, host, port=8069, timeout=3000):
     oerp = oerplib.OERP(host, protocol='xmlrpc', port=port, timeout=timeout)
     return oerp.db.db_exist(database_name)
 
-def test_connection(db_name, host=False, port=8069, user=False, password=False, timeout=60):
+def test_connection(db_name, host=False, port=8069, user=False,
+                    password=False, timeout=60, only_connection=False):
     """ Checks if the is connection with the instance and parameters are correct
 
     Args:
@@ -180,6 +180,8 @@ def test_connection(db_name, host=False, port=8069, user=False, password=False, 
         user (str): user name to test
         password (str): User's password to test
         timeout (int): Desired timeout for test
+        only_connection (bool): If true test only connection to the server,
+                                otherwise test connection and credentials
     """
     logger.info("Testing connection with '%s' host using '%s' port", host, port)
     try:
@@ -196,12 +198,13 @@ def test_connection(db_name, host=False, port=8069, user=False, password=False, 
         else:
             logger.warn("Connection could be stablished," + \
                         "but for some reason version number couldn't be gotten")
-    try:
-        oerp.login(user, "password", "test_restore_01")
-    except oerplib.error.RPCError as error_obj:
-        logger.error("%s, please check your parameters and try again", error_obj.message)
-        return False
-    else:
-        logger.info("User '%s' could connect to the" + \
-                    "instance properly with the supplied password", user)
+    if not only_connection:
+        try:
+            oerp.login(user, "password", "test_restore_01")
+        except oerplib.error.RPCError as error_obj:
+            logger.error("%s, please check your parameters and try again", error_obj.message)
+            return False
+        else:
+            logger.info("User '%s' could connect to the" + \
+                        "instance properly with the supplied password", user)
     return True

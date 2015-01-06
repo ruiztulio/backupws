@@ -30,7 +30,7 @@ def main(main_args):
     args = parser.parse_args(main_args)
 
     db_list = [x.strip() for x in args.dbs.split(',')]
-    if not utils.test_connection(args.db, args.host, args.port, args.user, args.password):
+    if not utils.test_connection(db_list[0], args.host, args.port, args.user, args.password, only_connection=True):
         return 1
     utils.backup_databases(db_list, args.backup_dir, args.user,
                            args.password, args.host, args.port,
