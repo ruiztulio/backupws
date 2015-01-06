@@ -11,6 +11,7 @@ logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('utils')
 
+
 def clean_files(files):
     """ Remove unnecesary and temporary files
 
@@ -35,7 +36,7 @@ def compress_files(name, files, dest_folder=None):
     if not dest_folder:
         dest_folder = '.'
     logger.debug("Generating compressed file: %s in %s folder", name, dest_folder)
-    full_name = os.path.join(dest_folder, '%s.tar.bz2'%name)
+    full_name = os.path.join(dest_folder, '%s.tar.bz2' % name)
     bz2_file = bz2.BZ2File(full_name, mode='w', compresslevel=9)
     with tarfile.open(mode='w', fileobj=bz2_file) as tar_bz2_file:
         for fname in files:
@@ -50,7 +51,7 @@ def decompress_files(name, dest_folder):
         name (str): Compressed file name
         dest_folder (str): Folder where the compressed file will be stored
     Returns:
-        The absolute path to decompressed folder or file 
+        The absolute path to decompressed folder or file
     """
     logger.debug("Decompressing file: %s", name)
     bz2_file = bz2.BZ2File(name, mode='r')
@@ -77,7 +78,8 @@ def dump_database(dest_folder, database_name, super_user_pass, host, port):
     Args:
         dest_folder (str): Folder where the function will save the dump
         database_name (str): Database name that will be dumped
-        super_user_pass (str): Super user password to be used to connect with odoo instance
+        super_user_pass (str): Super user password to be used 
+                               to connect with odoo instance
         host (str): Host name or IP address to connect
         port (int): Port number which Odoo instance is listening to
     Returns:
@@ -183,20 +185,23 @@ def test_connection(db_name, host=False, port=8069, user=False, password=False, 
     try:
         oerp = oerplib.OERP(host, protocol='xmlrpc', port=port, timeout=timeout)
         oerp_version = oerp.db.server_version()
-    except socket.error as e:
-        if e.errno == 111:
+    except socket.error as error_obj:
+        if error_obj.errno == 111:
             logger.error("Connection refused, check port number and host")
         return False
     else:
         if oerp_version:
-            logger.info("An Odoo v%s server is available a linstening into %s port", oerp_version, port)
+            logger.info("An Odoo v%s server is available" + \
+                        " and linstening into %s port", oerp_version, port)
         else:
-            logger.warn("Connection could be stablished, but for some reason version number couldn't be gotten ")
+            logger.warn("Connection could be stablished," + \
+                        "but for some reason version number couldn't be gotten")
     try:
-        user_obj = oerp.login(user, password, db_name)
-    except oerplib.error.RPCError, e:
-        logger.error("Wrong login ID or password, please check your parameters and try again")
+        oerp.login(user, "password", "test_restore_01")
+    except oerplib.error.RPCError as error_obj:
+        logger.error("%s, please check your parameters and try again", error_obj.message)
         return False
     else:
-        logger.info("User '%s' could connect to the instance properly with the supplied password", user)
+        logger.info("User '%s' could connect to the" + \
+                    "instance properly with the supplied password", user)
     return True

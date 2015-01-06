@@ -3,22 +3,32 @@ import oerplib
 import logging
 import sys
 import argparse
+import socket
 from lib import utils
 
 logging.basicConfig(level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('backup')
 
 
-def deactivate(db_name, super_user_login, super_user_password,
+def deactivate(db_name, user_login, user_password,
                host='localhost', port=8069):
+    """ Deactivate some instance parameters to avoid troubles (mail, cron, pac, etc)
+
+    Args:
+        db_name (str): Database name to be deactivated
+        user_login (str): Login name to use when connecting to the database
+        user_password (str): User password to connect
+        host (str): Hostname or ip to conect
+        port (int): Instance port number
+    """
 
     oerp = oerplib.OERP(host, protocol='xmlrpc', port=port)
 
     try:
-        oerp.login(super_user_login, super_user_password, db_name)
-    except socket.error as e:
-        if e.errno == 111:
+        oerp.login(user_login, user_password, db_name)
+    except socket.error as eror_obj:
+        if eror_obj.errno == 111:
             logger.critical('Cannot connect to OpenERP Server')
             logger.critical('Check instance address and server')
             logger.critical('Program terminating')
@@ -49,15 +59,16 @@ def deactivate(db_name, super_user_login, super_user_password,
             oerp.write('params.pac', pac_ids, {'active': False})
 
     logger.info("Deactivating cron jobs")
-    cron_ids = oerp.search('ir.cron', [('model', '<>', 'osv_memory.autovacuum'), ('active', '=', True)])
+    cron_ids = oerp.search('ir.cron', [('model', '<>', 'osv_memory.autovacuum'),
+                                       ('active', '=', True)])
     if cron_ids:
         logger.debug("Cron ids %s", str(cron_ids))
         retry = True
         while retry:
             try:
                 oerp.write('ir.cron', cron_ids, {'active': False})
-            except oerplib.error.RPCError, e:
-                if e.errno == 1:
+            except oerplib.error.RPCError as eror_obj:
+                if eror_obj.errno == 1:
                     retry = True
                     logger.warn("Error while trying to deactivate cron jobs, let's try again")
                 else:

@@ -3,8 +3,6 @@
 """
 This script is a PoC to make Odoo DB dumps using Oerplib
 """
-import datetime                                                                                                                                                                           
-import os
 import logging
 import argparse
 import sys
