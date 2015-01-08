@@ -63,18 +63,17 @@ def deactivate(db_name, user_login, user_password,
                                        ('active', '=', True)])
     if cron_ids:
         logger.debug("Cron ids %s", str(cron_ids))
-        retry = True
-        while retry:
+        retry = 3
+        while retry >= 0:
             try:
                 oerp.write('ir.cron', cron_ids, {'active': False})
             except oerplib.error.RPCError as eror_obj:
-                if eror_obj.errno == 1:
-                    retry = True
-                    logger.warn("Error while trying to deactivate cron jobs, let's try again")
-                else:
+                retry -= 1
+                if retry == -1:
                     raise
+                logger.warn("Error while trying to deactivate cron jobs, let's try again")
             else:
-                retry = False
+		retry = -2
 
 def main(main_args):
     """ Main function
