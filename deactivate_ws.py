@@ -26,8 +26,8 @@ DEST_FOLDER = args.temp_dir
 BACKUP_DIR= args.backup_dir
 HOST = args.host
 PORT = args.port
-USER = 'nhomar@vauxoo.com'
-PASSWORD = '4DM1NCHUCK'
+USER = 'admin'
+PASSWORD = 'admin'
 
 
 oerp = oerplib.OERP(HOST, protocol='xmlrpc', port=PORT)
