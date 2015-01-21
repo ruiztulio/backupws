@@ -49,7 +49,7 @@ def deactivate(db_name, user_login, user_password,
         logger.info("Deactivating out")
         partner_ids = oerp.search('res.partner', [('opt_out', '=', False)])
         if partner_ids:
-            logger.debug("Partner ids %s", str(partner_ids))
+            logger.debug("# of partner ids %s", len(partner_ids))
             oerp.write('res.partner', partner_ids, {'opt_out': True})
 
     params = oerp.search('ir.model', [('name', '=', 'params.pac')])
@@ -78,7 +78,7 @@ def deactivate(db_name, user_login, user_password,
                 time.sleep(wait_time)
             else:
 		retry = -2
-
+    logger.info("Database %s has been deactivated successfully", db_name)
 def main(main_args):
     """ Main function
     """
