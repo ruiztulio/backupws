@@ -4,6 +4,8 @@ import logging
 import sys
 import argparse
 import socket
+import random
+import time
 from lib import utils
 
 logging.basicConfig(level=logging.DEBUG,
@@ -71,7 +73,9 @@ def deactivate(db_name, user_login, user_password,
                 retry -= 1
                 if retry == -1:
                     raise
-                logger.warn("Error while trying to deactivate cron jobs, let's try again")
+                wait_time = random.random()
+                logger.warn("Error while trying to deactivate cron jobs, let's try again after %s seconds", str(wait_time))
+                time.sleep(wait_time)
             else:
 		retry = -2
 
