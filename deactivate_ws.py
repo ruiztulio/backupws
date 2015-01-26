@@ -15,7 +15,8 @@ logger = logging.getLogger('backup')
 
 def deactivate(db_name, user_login, user_password,
                host='localhost', port=8069):
-    """ Deactivate some instance parameters to avoid troubles (mail, cron, pac, etc)
+    """ Deactivate some instance parameters to avoid troubles
+        (mail, cron, pac, etc)
 
     Args:
         db_name (str): Database name to be deactivated
@@ -61,8 +62,9 @@ def deactivate(db_name, user_login, user_password,
             oerp.write('params.pac', pac_ids, {'active': False})
 
     logger.info("Deactivating cron jobs")
-    cron_ids = oerp.search('ir.cron', [('model', '<>', 'osv_memory.autovacuum'),
-                                       ('active', '=', True)])
+    cron_ids = oerp.search('ir.cron',
+                           [('model', '<>', 'osv_memory.autovacuum'),
+                            ('active', '=', True)])
     if cron_ids:
         logger.debug("Cron ids %s", str(cron_ids))
         retry = 3
@@ -74,11 +76,14 @@ def deactivate(db_name, user_login, user_password,
                 if retry == -1:
                     raise
                 wait_time = 2.0 * random.random()
-                logger.warn("Error while trying to deactivate cron jobs, let's try again after %s seconds", str(wait_time))
+                logger.warn("Error while trying to deactivate cron jobs,"
+                            "let's try again after %s seconds", str(wait_time))
                 time.sleep(wait_time)
             else:
                 retry = -2
     logger.info("Database %s has been deactivated successfully", db_name)
+
+
 def main(main_args):
     """ Main function
     """
@@ -89,11 +94,14 @@ def main(main_args):
                         help="The backups will be stored here", default=".")
     parser.add_argument("-H", "--host", help="", default="localhost")
     parser.add_argument("-p", "--port", help="", default=8069)
-    parser.add_argument("-u", "--user", help="Odoo super user", default="admin")
-    parser.add_argument("-w", "--password", help="Odoo super user pass", default="admin")
+    parser.add_argument("-u", "--user", help="Odoo super user",
+                        default="admin")
+    parser.add_argument("-w", "--password",
+                        help="Odoo super user pass", default="admin")
 
     args = parser.parse_args(main_args)
-    if not utils.test_connection(args.db, args.host, args.port, args.user, args.password):
+    if not utils.test_connection(args.db, args.host, args.port,
+                                 args.user, args.password):
         return 1
     deactivate(args.db, args.user, args.password, args.host, args.port)
 
