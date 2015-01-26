@@ -1,4 +1,4 @@
- # -*- encoding: utf-8 -*- 
+# -*- encoding: utf-8 -*-
 import oerplib
 import logging
 import sys
@@ -77,7 +77,7 @@ def deactivate(db_name, user_login, user_password,
                 logger.warn("Error while trying to deactivate cron jobs, let's try again after %s seconds", str(wait_time))
                 time.sleep(wait_time)
             else:
-		retry = -2
+                retry = -2
     logger.info("Database %s has been deactivated successfully", db_name)
 def main(main_args):
     """ Main function
@@ -85,7 +85,8 @@ def main(main_args):
     parser = argparse.ArgumentParser()
     parser.add_argument("db", help="Database name", default=False)
     parser.add_argument("-t", "--temp_dir", help="", default="/tmp")
-    parser.add_argument("-d", "--backup_dir", help="/var/lib/postgresql/db_backup", default=".")
+    parser.add_argument("-d", "--backup_dir",
+                        help="The backups will be stored here", default=".")
     parser.add_argument("-H", "--host", help="", default="localhost")
     parser.add_argument("-p", "--port", help="", default=8069)
     parser.add_argument("-u", "--user", help="Odoo super user", default="admin")
