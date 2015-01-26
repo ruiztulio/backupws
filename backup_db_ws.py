@@ -17,25 +17,33 @@ def main(main_args):
     """ Main function
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("dbs", help="Comma separated dabases names to backup", default=False)
-    parser.add_argument("-t", "--temp_dir", help="Temp working dir", default="/tmp")
-    parser.add_argument("-d", "--backup_dir", help="Where to store backups", default=".")
-    parser.add_argument("-r", "--reason", help="Reason why are  making this backup", default=False)
-    parser.add_argument("-H", "--host", help="Host running Odoo", default="localhost")
-    parser.add_argument("-p", "--port", help="Odoo xmlrpc port", default=8069)
-    parser.add_argument("-u", "--user", help="Odoo super user", default="admin")
-    parser.add_argument("-w", "--password", help="Odoo super user pass", default="admin")
-
+    parser.add_argument("dbs", help="Comma separated dabases names to backup",
+                        default=False)
+    parser.add_argument("-t", "--temp_dir", help="Temp working dir",
+                        default="/tmp")
+    parser.add_argument("-d", "--backup_dir", help="Where to store backups",
+                        default=".")
+    parser.add_argument("-r", "--reason",
+                        help="Reason why are  making this backup",
+                        default=False)
+    parser.add_argument("-H", "--host", help="Host running Odoo",
+                        default="localhost")
+    parser.add_argument("-p", "--port", help="Odoo xmlrpc port",
+                        default=8069)
+    parser.add_argument("-u", "--user",
+                        help="Odoo super user", default="admin")
+    parser.add_argument("-w", "--password", help="Odoo super user pass",
+                        default="admin")
 
     args = parser.parse_args(main_args)
-
     db_list = [x.strip() for x in args.dbs.split(',')]
-    if not utils.test_connection(db_list[0], args.host, args.port, args.user, args.password, only_connection=True):
+    if not utils.test_connection(db_list[0], args.host, args.port,
+                                 args.user, args.password,
+                                 only_connection=True):
         return 1
     utils.backup_databases(db_list, args.backup_dir, args.user,
                            args.password, args.host, args.port,
                            args.reason, args.temp_dir)
-
 
 
 if __name__ == '__main__':
