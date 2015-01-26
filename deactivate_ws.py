@@ -73,7 +73,7 @@ def deactivate(db_name, user_login, user_password,
                 retry -= 1
                 if retry == -1:
                     raise
-                wait_time = random.random()
+                wait_time = 2.0 * random.random()
                 logger.warn("Error while trying to deactivate cron jobs, let's try again after %s seconds", str(wait_time))
                 time.sleep(wait_time)
             else:
