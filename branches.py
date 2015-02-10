@@ -26,8 +26,8 @@ filename = args.json_file
 path = args.path
 if not path:
     path = os.getcwd()
-create = args.save
-reconstruct = args.load
+save = args.save
+load = args.load
 
 
 def get_all_branches_info(path):
@@ -54,13 +54,17 @@ def get_all_branches_info(path):
     return res
 
 
+def save_branches_info(info):
+    with open(filename, 'w') as fout:
+        json.dump(b_info, fout, sort_keys=True, indent=4, ensure_ascii=False,
+                  separators=(',', ':'))
+
+
 def set_branches(file):
     pass
 
 if __name__ == '__main__':
     b_info = get_all_branches_info(path)
-    with open(filename, 'w') as fout:
-        json.dump(b_info, fout, sort_keys=True, indent=4, ensure_ascii=False,
-                  separators=(',', ':'))
+    save_branches_info(b_info)
 
     #_apply_recursive('/home/truiz/working/backupws')
