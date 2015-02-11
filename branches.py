@@ -69,18 +69,20 @@ def save_branches_info(info, json_file):
     :param json_file: File where info will be dumped
     """
     with open(json_file, 'w') as fout:
+        logger.debug("Dumping branches into file: %s", json_file)
         json.dump(info, fout, sort_keys=True, indent=4, ensure_ascii=False,
                   separators=(',', ':'))
 
 
-def load_branches(filename):
+def load_branches(json_file):
     """This function loads branches' info from a Json file and dumps it
     into a list of dictionaries
 
     :param filename: File to be loaded
     :return: List of dictionaries
     """
-    with open(filename, "r") as f:
+    with open(json_file, "r") as f:
+        logger.debug("Loading file: %s", json_file)
         repo_dict = json.load(f)
     return repo_dict
 
@@ -91,6 +93,8 @@ def set_branches(info):
     :param info: List of dictionaries containing branches' info
     """
     for branch in info:
+        logger.debug("Cloning repo: %s - branch: %s", branch['repo_url'],
+                     branch['branch'])
         repo = Repo.clone_from(branch['repo_url'], branch['path'],
                                branch=branch['branch'])
 
