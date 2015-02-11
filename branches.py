@@ -14,11 +14,11 @@ logger = logging.getLogger('info_branchs')
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-f", "--json_file", help="Json file to use", default=False)
-parser.add_argument("-p", "--path", help="GIT Repo path, actual dir by default", 
+parser.add_argument("-p", "--path", help="GIT Repo path, actual dir by default",
                     default=False)
-parser.add_argument("-s", "--save", help="Create Json file from Repo", 
+parser.add_argument("-s", "--save", help="Create Json file from Repo",
                     default=False)
-parser.add_argument("-l", "--load", help="Reconstruct Repo from Json file", 
+parser.add_argument("-l", "--load", help="Reconstruct Repo from Json file",
                     default=False)
 
 args = parser.parse_args()
@@ -54,8 +54,8 @@ def get_all_branches_info(path):
     return res
 
 
-def save_branches_info(info):
-    with open(filename, 'w') as fout:
+def save_branches_info(info, json_file):
+    with open(json_file, 'w') as fout:
         json.dump(info, fout, sort_keys=True, indent=4, ensure_ascii=False,
                   separators=(',', ':'))
 
@@ -68,12 +68,13 @@ def load_branches(filename):
 
 def set_branches(info):
     for branch in info:
-        repo = Repo.clone_from(branch['repo_url'], branch['path'], branch=branch['branch'])
+        repo = Repo.clone_from(branch['repo_url'], branch['path'],
+                               branch=branch['branch'])
 
 if __name__ == '__main__':
     if save:
         b_info = get_all_branches_info(path)
-        f = save_branches_info(b_info)
+        save_branches_info(b_info, filename)
     if load:
         b_info = load_branches(filename)
         set_branches(b_info)
