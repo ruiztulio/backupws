@@ -56,15 +56,26 @@ def get_all_branches_info(path):
 
 def save_branches_info(info):
     with open(filename, 'w') as fout:
-        json.dump(b_info, fout, sort_keys=True, indent=4, ensure_ascii=False,
+        json.dump(info, fout, sort_keys=True, indent=4, ensure_ascii=False,
                   separators=(',', ':'))
 
 
-def set_branches(file):
-    pass
+def load_branches(filename):
+    with open(filename, "r") as f:
+        repo_dict = json.load(f)
+    return repo_dict
+
+
+def set_branches(info):
+    for branch in info:
+        repo = Repo.clone_from(branch['repo_url'], branch['path'], branch=branch['branch'])
 
 if __name__ == '__main__':
-    b_info = get_all_branches_info(path)
-    save_branches_info(b_info)
+    if save:
+        b_info = get_all_branches_info(path)
+        f = save_branches_info(b_info)
+    if load:
+        b_info = load_branches(filename)
+        set_branches(b_info)
 
     #_apply_recursive('/home/truiz/working/backupws')
