@@ -69,12 +69,17 @@ def save_branches_info(info, json_file):
     """This function dumps branches' info into a Json file
 
     :param info: List of dictionaries with branches' info
-    :param json_file: File where info will be dumped
+    :param json_file: File where info will be 
+
+    :return: Absolute path of Json file
     """
     with open(json_file, 'w') as fout:
         logger.debug("Dumping branches into file: %s", json_file)
         json.dump(info, fout, sort_keys=True, indent=4, ensure_ascii=False,
                   separators=(',', ':'))
+        if not os.path.isabs(json_file):
+            json_file = os.path.abspath(json_file)
+        return json_file
 
 
 def load_branches(json_file):
