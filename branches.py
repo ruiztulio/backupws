@@ -69,7 +69,7 @@ def save_branches_info(info, json_file):
     """This function dumps branches' info into a Json file
 
     :param info: List of dictionaries with branches' info
-    :param json_file: File where info will be 
+    :param json_file: File where info will be
 
     :return: Absolute path of Json file
     """
@@ -104,7 +104,8 @@ def set_branches(info):
         logger.debug("Cloning repo: %s - branch: %s", branch['repo_url'],
                      branch['branch'])
         depth = branch.get('depth', False)
-        repo = Repo.clone_from(branch['repo_url'], branch['path'],
+        repo = Repo.clone_from(branch['repo_url'],
+                               os.path.join(path, branch['path']),
                                branch=branch['branch'], depth=depth)
 
 if __name__ == '__main__':
