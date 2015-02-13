@@ -33,12 +33,13 @@ Database name and file are mandaroty fields
 
 To save branches' info into a json file::
 
-    python branches.py -f json_file -p path_to_be_saved -s True
+    python branches.py -f json_file -p path_to_be_saved -s
 
 If path_to_be_saved is not specified, current dir will be used
+Json_file is a mandatory field
 
-To build branches using file made with **branches.py**::
+To build branches using Json file made with **branches.py**::
 
-    python branches.py -f json_file -l True
+    python branches.py -f json_file -l
 
-In both cases, json_file is a mandatory field
+Json_file is a mandatory field

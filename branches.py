@@ -16,13 +16,15 @@ logging.basicConfig(level=logging.DEBUG,
 logger = logging.getLogger('info_branchs')
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-f", "--json_file", help="Json file to use", default=False)
-parser.add_argument("-p", "--path", help="GIT Repo path, actual dir by default",
+parser.add_argument("-f", "--json_file", help="Json file to use", required=True)
+parser.add_argument("-p", "--path",
+                    help="Path of GIT Repo, actual dir by default",
                     default=False)
-parser.add_argument("-s", "--save", help="Create Json file from Repo",
-                    default=False)
-parser.add_argument("-l", "--load", help="Reconstruct Repo from Json file",
-                    default=False)
+action = parser.add_mutually_exclusive_group(required=True)
+action.add_argument("-s", "--save", help="Create Json file from Repo",
+                    action="store_true")
+action.add_argument("-l", "--load", help="Reconstruct Repo from Json file",
+                    action="store_true")
 
 args = parser.parse_args()
 filename = args.json_file
