@@ -104,9 +104,12 @@ def set_branches(info):
         logger.debug("Cloning repo: %s - branch: %s", branch['repo_url'],
                      branch['branch'])
         depth = branch.get('depth', False)
-        repo = Repo.clone_from(branch['repo_url'],
-                               os.path.join(path, branch['path']),
-                               branch=branch['branch'], depth=depth)
+        try:
+            repo = Repo.clone_from(branch['repo_url'],
+                                   os.path.join(path, branch['path']),
+                                   branch=branch['branch'], depth=depth)
+        except Exception as e:
+            logger.error(e)
 
 if __name__ == '__main__':
     if save:
