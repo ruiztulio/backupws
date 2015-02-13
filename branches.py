@@ -101,8 +101,9 @@ def set_branches(info):
     :param info: List of dictionaries containing branches' info
     """
     for branch in info:
-        logger.debug("Cloning repo: %s - branch: %s", branch['repo_url'],
-                     branch['branch'])
+        logger.debug("Cloning repo: %s - branch: %s - path: %s",
+                     branch['repo_url'], branch['branch'],
+                     os.path.join(path, branch['path']))
         depth = branch.get('depth', False)
         try:
             repo = Repo.clone_from(branch['repo_url'],
