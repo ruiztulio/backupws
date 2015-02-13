@@ -42,4 +42,8 @@ To build branches using Json file made with **branches.py**::
 
     python branches.py -f json_file -l
 
+If some depth is required for cloned branches, use depth parameter::
+
+    python branches.py -f json_file -d depth -l
+
 Json_file is a mandatory field

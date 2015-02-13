@@ -25,6 +25,8 @@ action.add_argument("-s", "--save", help="Create Json file from Repo",
                     action="store_true")
 action.add_argument("-l", "--load", help="Reconstruct Repo from Json file",
                     action="store_true")
+parser.add_argument("-d", "--depth", help="Depth of commits to be cloned",
+                    default=False)
 
 args = parser.parse_args()
 filename = args.json_file
@@ -33,6 +35,7 @@ if not path:
     path = os.getcwd()
 save = args.save
 load = args.load
+depth = args.depth
 
 
 def get_all_branches_info(path):
@@ -98,7 +101,7 @@ def set_branches(info):
         logger.debug("Cloning repo: %s - branch: %s", branch['repo_url'],
                      branch['branch'])
         repo = Repo.clone_from(branch['repo_url'], branch['path'],
-                               branch=branch['branch'])
+                               branch=branch['branch'], depth=depth)
 
 if __name__ == '__main__':
     if save:
