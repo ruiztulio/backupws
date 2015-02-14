@@ -41,6 +41,7 @@ def simplify_path(b_info):
     :param b_info: List of dictionaries with branches' info
     :return: List of dictionaries with branches' info
     """
+    logger.debug("Deleting all common branches' path")
     repeated = True
     while repeated:
         piece_path = []
@@ -54,6 +55,7 @@ def simplify_path(b_info):
         if repeated:
             for branch in b_info:
                 branch.update({'path': branch['path'].split('/', 1)[1]})
+    logger.debug("Common paths deleted")
     return b_info
 
 
@@ -80,6 +82,7 @@ def get_all_branches_info(path):
                     'is_dirty': repo.is_dirty(),
                     'depth': 1})
                 res.append(info)
+                logger.info("Branch collected")
             else:
                 r = get_all_branches_info(p)
                 if r:
@@ -95,12 +98,14 @@ def save_branches_info(info, json_file):
 
     :return: Absolute path of Json file
     """
+    logger.debug("Opening file %s", json_file)
     with open(json_file, 'w') as fout:
-        logger.debug("Dumping branches into file: %s", json_file)
+        logger.info("Dumping branches into file: %s", json_file)
         json.dump(info, fout, sort_keys=True, indent=4, ensure_ascii=False,
                   separators=(',', ':'))
         if not os.path.isabs(json_file):
             json_file = os.path.abspath(json_file)
+        logger.info("Branches dumped")
         return json_file
 
 
@@ -111,9 +116,11 @@ def load_branches(json_file):
     :param filename: File to be loaded
     :return: List of dictionaries
     """
+    logger.debug("Opening file %s", json_file)
     with open(json_file, "r") as f:
-        logger.debug("Loading file: %s", json_file)
+        logger.info("Loading branches from file %s", json_file)
         repo_dict = json.load(f)
+    logger.info("Branches loaded")
     return repo_dict
 
 
@@ -122,6 +129,7 @@ def set_branches(info):
 
     :param info: List of dictionaries containing branches' info
     """
+    logger.info("Cloning branches...")
     for branch in info:
         logger.debug("Cloning repo: %s - branch: %s - path: %s",
                      branch['repo_url'], branch['branch'],
@@ -131,6 +139,7 @@ def set_branches(info):
             repo = Repo.clone_from(branch['repo_url'],
                                    os.path.join(path, branch['path']),
                                    branch=branch['branch'], depth=depth)
+            logger.info("Branch %s cloned", branch['path'])
         except Exception as e:
             logger.error(e)
 
