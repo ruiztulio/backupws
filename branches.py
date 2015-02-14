@@ -35,6 +35,28 @@ save = args.save
 load = args.load
 
 
+def simplify_path(b_info):
+    """This function deletes all common directories in branches' path
+
+    :param b_info: List of dictionaries with branches' info
+    :return: List of dictionaries with branches' info
+    """
+    repeated = True
+    while repeated:
+        piece_path = []
+        for branch in b_info:
+            piece_path.append(branch['path'].split('/', 1)[0])
+        word = piece_path[0]
+        repeated = True
+        for each in piece_path:
+            if each != word:
+                repeated = False
+        if repeated:
+            for branch in b_info:
+                branch.update({'path': branch['path'].split('/', 1)[1]})
+    return b_info
+
+
 def get_all_branches_info(path):
     """This function get branches info and saves it in a list of dict
 
@@ -115,6 +137,7 @@ def set_branches(info):
 if __name__ == '__main__':
     if save:
         b_info = get_all_branches_info(path)
+        b_info = simplify_path(b_info)
         save_branches_info(b_info, filename)
     if load:
         b_info = load_branches(filename)
