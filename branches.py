@@ -12,6 +12,7 @@ import logging
 import argparse
 
 from lib.utils import simplify_path
+from lib.utils import name_from_url
 
 logging.basicConfig(level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -58,6 +59,7 @@ def get_all_branches_info(path):
                     'branch': str(repo.head.ref),
                     'commit': str(repo.head.reference.commit),
                     'is_dirty': repo.is_dirty(),
+                    'name': name_from_url(str(repo.remotes.origin.url)),
                     'depth': 1})
                 res.append(info)
                 logger.info("Branch collected")

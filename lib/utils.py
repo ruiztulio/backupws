@@ -51,6 +51,22 @@ def simplify_path(b_info):
     return b_info
 
 
+def name_from_url(url):
+    """Takes name of a GIT repo from origin url
+
+    Args:
+        url (str): Url of GIT repo
+
+    Returns:
+        Repo's name
+    """
+    name = url
+    while '/' in name:
+        name = name.split('/', 1)[1]
+    name = name.split('.', 1)[0]
+    return name
+
+
 def compress_files(name, files, dest_folder=None):
     """ Compress a file, set of files or a folder in tar.bz2 format
 
