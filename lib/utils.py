@@ -24,6 +24,7 @@ def clean_files(files):
         elif os.path.isdir(fname):
             shutil.rmtree(fname)
 
+
 def simplify_path(b_info):
     """This function deletes all common directories in branches' path
 
