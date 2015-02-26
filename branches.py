@@ -32,6 +32,9 @@ action.add_argument("-l", "--load", help="Reconstruct Repo from Json file",
                     action="store_true")
 action.add_argument("-u", "--update", help="Update a list of repositories",
                     action="store_true")
+action.add_argument("-r", "--reset",
+                    help="Resets HARD all branches to commits from Json file",
+                    action="store_true")
 
 args = parser.parse_args()
 filename = args.json_file
@@ -43,6 +46,7 @@ if args.repo:
 save = args.save
 load = args.load
 update = args.update
+reset = args.reset
 
 
 def get_all_branches_info(path):
@@ -154,6 +158,24 @@ def update_branches(info, branches):
         logger.warning("Repo %s NOT FOUND", name)
 
 
+def reset_branches(info):
+    """This function resets hardly all branches to the commits specified in
+    dicts info
+
+    :param info: List of dictionaries containing branches' info
+    """
+    logger.info("Resetting branches...")
+    for branch in info:
+        repo = Repo(os.path.join(path, branch['path']))
+        try:
+            logger.debug("Resetting branch %s to commit %s", branch['name'],
+                         branch['commit'])
+            repo.git.reset(branch['commit'], '--hard')
+            logger.info("Branch %s reset")
+        except Exception as e:
+            logger.error(e)
+
+
 if __name__ == '__main__':
     if save:
         b_info = get_all_branches_info(path)
@@ -165,5 +187,8 @@ if __name__ == '__main__':
     if update:
         b_info = load_branches(filename)
         update_branches(b_info, branches)
+    if reset:
+        b_info = load_branches(filename)
+        reset_branches(b_info)
 
     #_apply_recursive('/home/truiz/working/backupws')
