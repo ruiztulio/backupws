@@ -144,8 +144,7 @@ def update_branches(info, branches):
             logger.debug("Pull from %s - branch %s", branch['repo_url'],
                          branch['branch'])
             repo = Repo(os.path.join(path, branch['path']))
-            origin = repo.remotes.origin
-            origin.pull()
+            repo.remotes.origin.pull()
             logger.info("Repo %s updated", branch['name'])
             branches.remove(branch['name'])
     for name in branches:
