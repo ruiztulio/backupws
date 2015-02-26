@@ -140,13 +140,16 @@ def update_branches(info, branches):
     logger.info("Updating branches...")
     for branch in info:
         if branch['name'] in branches:
-            logger.info("%s FOUND", branch['name'])
+            logger.debug("Repo %s FOUND", branch['name'])
+            logger.debug("Pull from %s - branch %s", branch['repo_url'],
+                         branch['branch'])
             repo = Repo(os.path.join(path, branch['path']))
             origin = repo.remotes.origin
             origin.pull()
+            logger.info("Repo %s updated", branch['name'])
             branches.remove(branch['name'])
     for name in branches:
-        logger.debug("%s NOT FOUND", name)
+        logger.warning("Repo %s NOT FOUND", name)
 
 
 if __name__ == '__main__':
