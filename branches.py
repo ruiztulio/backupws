@@ -171,7 +171,7 @@ def reset_branches(info):
             logger.debug("Resetting branch %s to commit %s", branch['name'],
                          branch['commit'])
             repo.git.reset(branch['commit'], '--hard')
-            logger.info("Branch %s reset")
+            logger.info("Branch %s reset", branch['name'])
         except Exception as e:
             logger.error(e)
 
