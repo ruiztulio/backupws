@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """ This script loads branches information to a Json file
-and reconstruct branches from suh files
+and reconstruct branches from such files
 """
 
 import os
@@ -23,10 +23,14 @@ parser.add_argument("-f", "--json_file", help="Json file to use", required=True)
 parser.add_argument("-p", "--path",
                     help="Path of GIT Repo, actual dir by default",
                     default=False)
+parser.add_argument("--repo", help="Comma separated list of repositories",
+                    default=None)
 action = parser.add_mutually_exclusive_group(required=True)
 action.add_argument("-s", "--save", help="Create Json file from Repo",
                     action="store_true")
 action.add_argument("-l", "--load", help="Reconstruct Repo from Json file",
+                    action="store_true")
+action.add_argument("-u", "--update", help="Update a list of repositories",
                     action="store_true")
 
 args = parser.parse_args()
@@ -34,8 +38,11 @@ filename = args.json_file
 path = args.path
 if not path:
     path = os.getcwd()
+if args.repo:
+    branches = args.repo.split(',')
 save = args.save
 load = args.load
+update = args.update
 
 
 def get_all_branches_info(path):
@@ -123,6 +130,25 @@ def set_branches(info):
         except Exception as e:
             logger.error(e)
 
+
+def update_branches(info, branches):
+    """This function executes GIT PULL to listed repositories
+
+    :param info: List of dictionaries containing branches' info
+    :param branches: List of branches to be updated
+    """
+    logger.info("Updating branches...")
+    for branch in info:
+        if branch['name'] in branches:
+            logger.info("%s FOUND", branch['name'])
+            repo = Repo(os.path.join(path, branch['path']))
+            origin = repo.remotes.origin
+            origin.pull()
+            branches.remove(branch['name'])
+    for name in branches:
+        logger.debug("%s NOT FOUND", name)
+
+
 if __name__ == '__main__':
     if save:
         b_info = get_all_branches_info(path)
@@ -131,5 +157,8 @@ if __name__ == '__main__':
     if load:
         b_info = load_branches(filename)
         set_branches(b_info)
+    if update:
+        b_info = load_branches(filename)
+        update_branches(b_info, branches)
 
     #_apply_recursive('/home/truiz/working/backupws')
