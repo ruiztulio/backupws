@@ -144,8 +144,11 @@ def update_branches(info, branches):
             logger.debug("Pull from %s - branch %s", branch['repo_url'],
                          branch['branch'])
             repo = Repo(os.path.join(path, branch['path']))
-            repo.remotes.origin.pull()
-            logger.info("Repo %s updated", branch['name'])
+            try:
+                repo.remotes.origin.pull(branch['branch'])
+                logger.info("Repo %s updated", branch['name'])
+            except Exception as e:
+                logger.error(e)
             branches.remove(branch['name'])
     for name in branches:
         logger.warning("Repo %s NOT FOUND", name)
