@@ -33,13 +33,19 @@ Database name and file are mandaroty fields
 
 To save branches' info into a json file::
 
-    python branches.py -f json_file -p path_to_be_saved -s
-
-If path_to_be_saved is not specified, current dir will be used
-Json_file is a mandatory field
+    python branches.py -f json_file -p path_of_repo_structure -s
 
 To build branches using Json file made with **branches.py**::
 
-    python branches.py -f json_file -l
+    python branches.py -f json_file -p path_of_repo_structure -l
 
+To update branches using Json file::
+
+    python branches.py -f json_file -p path_of_repo_structure --repo comma_separated_list_of_repo -u
+
+To reset branches to commits in Json file::
+
+    python branches.py -f json_file -p path_of_repo_structure --repo comma_separated_list_of_repo -r
+
+If path_of_repo_structure is not specified, current dir will be used
 Json_file is a mandatory field
