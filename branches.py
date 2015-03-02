@@ -158,22 +158,27 @@ def update_branches(info, branches):
         logger.warning("Repo %s NOT FOUND", name)
 
 
-def reset_branches(info):
+def reset_branches(info, branches):
     """This function resets hardly all branches to the commits specified in
     dicts info
 
     :param info: List of dictionaries containing branches' info
+    :param branches: List of branches to be reset
     """
     logger.info("Resetting branches...")
     for branch in info:
-        repo = Repo(os.path.join(path, branch['path']))
-        try:
-            logger.debug("Resetting branch %s to commit %s", branch['name'],
-                         branch['commit'])
-            repo.git.reset(branch['commit'], '--hard')
-            logger.info("Branch %s reset", branch['name'])
-        except Exception as e:
-            logger.error(e)
+        if branch['name'] in branches:
+            repo = Repo(os.path.join(path, branch['path']))
+            try:
+                logger.debug("Resetting branch %s to commit %s", branch['name'],
+                             branch['commit'])
+                repo.git.reset(branch['commit'], '--hard')
+                logger.info("Branch %s reset", branch['name'])
+            except Exception as e:
+                logger.error(e)
+            branches.remove(branch['name'])
+    for name in branches:
+        logger.warning("Repo %s NOT FOUND", name)
 
 
 if __name__ == '__main__':
@@ -189,6 +194,6 @@ if __name__ == '__main__':
         update_branches(b_info, branches)
     if reset:
         b_info = load_branches(filename)
-        reset_branches(b_info)
+        reset_branches(b_info, branches)
 
     #_apply_recursive('/home/truiz/working/backupws')
