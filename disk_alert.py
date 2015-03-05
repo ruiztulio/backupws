@@ -16,6 +16,8 @@ parser.add_argument("-T", "--To", help="Comma separated recipient's email list",
 parser.add_argument("-W", "--pswd", help="Email password", required=True)
 parser.add_argument("-P", "--partition", help="Partition to be evaluated",
                     required=True)
+parser.add_argument("-L", "--limit", help="Minimal free space before alert (Gb)",
+                    default=10)
 
 args = parser.parse_args()
 mail_info = {'server': args.server,
@@ -24,6 +26,7 @@ mail_info = {'server': args.server,
              'to': args.To.split(","),
              'pswd': args.pswd}
 partition = args.partition
+limit = int(args.limit)
 
 
 def send_mail(info):
@@ -53,13 +56,13 @@ def free_space(data, partition):
     return int(data[id_free].split("G")[0])
 
 
-def mail_body(info, data, partition):
+def mail_body(info, limit, data, partition):
     space = free_space(data, partition)
     table = "\t".join(data)
     name = str(uname(nodename=True)).split("\n")[0]
-    if space <= 200:
+    if space <= limit + 5:
         subject = "WARNING! "
-        if space <= 160:
+        if space <= limit:
             subject = "RED ALERT! "
     subject += "Server %s out of space <no-reply>" % name
     body = "Server %s is running out of space " % name
@@ -74,5 +77,6 @@ def mail_body(info, data, partition):
 
 if __name__ == '__main__':
     data = get_data()
-    mail_info = mail_body(mail_info, data, partition)
-    send_mail(mail_info)
+    if free_space(data, partition) <= limit + 5:
+        mail_info = mail_body(mail_info, limit, data, partition)
+        send_mail(mail_info)
