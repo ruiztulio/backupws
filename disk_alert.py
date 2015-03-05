@@ -34,7 +34,6 @@ logger = logging.getLogger('Space watch')
 
 mail_info = {'server': args.server,
              'from': args.From,
-             'login': args.From,
              'to': args.To.split(","),
              'pswd': args.pswd}
 partition = args.partition.split(",")
@@ -48,7 +47,7 @@ def send_mail(info):
     message = header + info['message']
     server = smtplib.SMTP(info['server'])
     server.starttls()
-    server.login(info['login'], info['pswd'])
+    server.login(info['from'], info['pswd'])
     problems = server.sendmail(info['from'], info['to'], message)
     server.quit()
 
