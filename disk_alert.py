@@ -7,7 +7,7 @@ from sh import df
 from sh import uname
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--server", help="SMTP Server",
+parser.add_argument("--server", help="SMTP Server:Port",
                     default="smtp.gmail.com:587")
 parser.add_argument("-F", "--From", help="Sender's email address",
                     required=True)
@@ -20,10 +20,10 @@ mail_info = {'server': args.server,
              'from': args.From,
              'login': args.From,
              'to': args.To.split(","),
-             'pswd': args.pswd
-}
+             'pswd': args.pswd}
 
-def sendmail(info):
+
+def send_mail(info):
     header = "From: %s\n" % info['from']
     header += "To: %s\n" % ",".join(info['to'])
     header += "Subject: %s\n\n" % info['subject']
@@ -33,6 +33,7 @@ def sendmail(info):
     server.login(info['login'], info['pswd'])
     problems = server.sendmail(info['from'], info['to'], message)
     server.quit()
+
 
 def free_space():
     out_df = df(block_size="G")
@@ -46,7 +47,21 @@ def free_space():
     return int(data[id_free].split("G")[0])
 
 
+def mail_body(info, space):
+    name = str(uname(nodename=True)).split("\n")[0]
+    if space <= 15:
+        subject = "WARNING! "
+        if space <= 10:
+            subject = "RED ALERT! "
+    subject += "Server %s out of space <no-reply>" % name
+    body = "Server %s is running out of space. " % name
+    body += "It has %sG free\n\n" % space
+    body += str(df(block_size="G"))
+    info.update({'subject': subject})
+    info.update({'message': body})
+    return info
+
+
 if __name__=='__main__':
-    mail_info.update({'subject': "Prueba"})
-    mail_info.update({'message': str(uname(nodename=True))})
-    sendmail(mail_info)
+    mail_info = mail_body(mail_info, free_space())
+    send_mail(mail_info)
