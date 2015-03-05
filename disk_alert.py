@@ -7,10 +7,6 @@ import logging
 from sh import df
 from sh import uname
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger('Space watch')
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--server", help="SMTP Server:Port",
                     default="smtp.gmail.com:587")
@@ -26,8 +22,16 @@ parser.add_argument("-P", "--partition",
 parser.add_argument("-L", "--limit",
                     help="Minimal free space before alert (Gb)",
                     default=10)
+parser.add_argument("--log-level", help="Level of logger. INFO as default",
+                    default="info")
 
 args = parser.parse_args()
+level = getattr(logging, args.log_level.upper(), None)
+
+logging.basicConfig(level=level,
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger('Space watch')
+
 mail_info = {'server': args.server,
              'from': args.From,
              'login': args.From,
@@ -47,6 +51,7 @@ def send_mail(info):
     server.login(info['login'], info['pswd'])
     problems = server.sendmail(info['from'], info['to'], message)
     server.quit()
+
 
 def get_data():
     logger.debug("Collecting data")
