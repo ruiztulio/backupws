@@ -69,18 +69,18 @@ def mail_body(info, limit, data, partition):
         subject = "WARNING! "
         if min(space) <= limit:
             subject = "RED ALERT! "
-    subject += "Server %s out of space <no-reply>" % name
-    body = "Server %s is running out of space.\n\n" % name
-    for each in partition:
-        if space[partition.index(each)] <= limit + 5:
-            body += "In partition %s: " % each
-            body += "%sG of free space\n" % space[partition.index(each)]
-    body += "\nMore info:\n\n"
-    body += table
-    body += "\nThis is an automatic message. Do not Reply!\n\nVauxoo."
-    info.update({'subject': subject})
-    info.update({'message': body})
-    return send_mail(info)
+        subject += "Server %s out of space <no-reply>" % name
+        body = "Server %s is running out of space.\n\n" % name
+        for each in partition:
+            if space[partition.index(each)] <= limit + 5:
+                body += "In partition %s: " % each
+                body += "%sG of free space\n" % space[partition.index(each)]
+        body += "\nMore info:\n\n"
+        body += table
+        body += "\nThis is an automatic message. Do not Reply!\n\nVauxoo."
+        info.update({'subject': subject})
+        info.update({'message': body})
+        send_mail(info)
 
 
 if __name__ == '__main__':
