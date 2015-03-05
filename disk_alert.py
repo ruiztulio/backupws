@@ -24,11 +24,14 @@ parser.add_argument("-L", "--limit",
                     default=10)
 parser.add_argument("--log-level", help="Level of logger. INFO as default",
                     default="info")
+parser.add_argument("--logfile", help="File where log will be saved",
+                    default=None)
 
 args = parser.parse_args()
 level = getattr(logging, args.log_level.upper(), None)
 
 logging.basicConfig(level=level,
+                    filename=args.logfile,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('Space watch')
 
