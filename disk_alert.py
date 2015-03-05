@@ -3,8 +3,13 @@
 
 import smtplib
 import argparse
+import logging
 from sh import df
 from sh import uname
+
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger('Space watch')
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--server", help="SMTP Server:Port",
@@ -44,11 +49,13 @@ def send_mail(info):
     server.quit()
 
 def get_data():
+    logger.debug("Collecting data")
     out_df = df(block_size="G")
     out_df = out_df.encode("utf-8", "replace")
     out_data = out_df.split(" ")
     while out_data.count("") > 0:
         out_data.remove("")
+    logger.debug("Data collected")
     return out_data
 
 
@@ -62,10 +69,12 @@ def free_space(data, partition):
 def mail_body(info, limit, data, partition):
     table = "\t".join(data)
     name = str(uname(nodename=True)).split("\n")[0]
+    logger.info("Evaluating free space")
     space = []
     for each in partition:
         space.append(free_space(data, each))
     if min(space) <= limit + 5:
+        logger.info("Partitions under limit space found. Writing mail")
         subject = "WARNING! "
         if min(space) <= limit:
             subject = "RED ALERT! "
@@ -73,6 +82,7 @@ def mail_body(info, limit, data, partition):
         body = "Server %s is running out of space.\n\n" % name
         for each in partition:
             if space[partition.index(each)] <= limit + 5:
+                logger.debug("Partition %s under limit space", each)
                 body += "In partition %s: " % each
                 body += "%sG of free space\n" % space[partition.index(each)]
         body += "\nMore info:\n\n"
@@ -80,9 +90,17 @@ def mail_body(info, limit, data, partition):
         body += "\nThis is an automatic message. Do not Reply!\n\nVauxoo."
         info.update({'subject': subject})
         info.update({'message': body})
-        send_mail(info)
+        logger.debug("Sending mail")
+        try:
+            send_mail(info)
+            logger.info("Mail sent to %s", ",".join(info['to']))
+        except Exception as e:
+            logger.error(e)
+    else:
+        logger.info("No partitions found under limit space")
 
 
 if __name__ == '__main__':
+    logger.debug("Excecuting Free Space Alert script")
     data = get_data()
     mail_body(mail_info, limit, data, partition)
