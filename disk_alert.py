@@ -14,6 +14,8 @@ parser.add_argument("-F", "--From", help="Sender's email address",
 parser.add_argument("-T", "--To", help="Comma separated recipient's email list",
                     required=True)
 parser.add_argument("-W", "--pswd", help="Email password", required=True)
+parser.add_argument("-P", "--partition", help="Partition to be evaluated",
+                    required=True)
 
 args = parser.parse_args()
 mail_info = {'server': args.server,
@@ -21,6 +23,7 @@ mail_info = {'server': args.server,
              'login': args.From,
              'to': args.To.split(","),
              'pswd': args.pswd}
+partition = args.partition
 
 
 def send_mail(info):
@@ -34,34 +37,42 @@ def send_mail(info):
     problems = server.sendmail(info['from'], info['to'], message)
     server.quit()
 
-
-def free_space():
+def get_data():
     out_df = df(block_size="G")
     out_df = out_df.encode("utf-8", "replace")
-    data = out_df.split(" ")
-    while data.count("") > 0:
-        data.remove("")
+    out_data = out_df.split(" ")
+    while out_data.count("") > 0:
+        out_data.remove("")
+    return out_data
+
+
+def free_space(data, partition):
     for each in data:
-        if "home" in each:
-            id_free = data.index(each) - 2
+        if partition in each:
+            id_free = data.index(each) + 3
     return int(data[id_free].split("G")[0])
 
 
-def mail_body(info, space):
+def mail_body(info, data, partition):
+    space = free_space(data, partition)
+    table = "\t".join(data)
     name = str(uname(nodename=True)).split("\n")[0]
-    if space <= 15:
+    if space <= 200:
         subject = "WARNING! "
-        if space <= 10:
+        if space <= 160:
             subject = "RED ALERT! "
     subject += "Server %s out of space <no-reply>" % name
-    body = "Server %s is running out of space. " % name
-    body += "It has %sG free\n\n" % space
-    body += str(df(block_size="G"))
+    body = "Server %s is running out of space " % name
+    body += "in partition %s.\n\n" % partition
+    body += "It has %sG of free space\n\nMore info:\n\n" % space
+    body += table
+    body += "\nThis is an automatic message. Do not Reply!\n\nVauxoo."
     info.update({'subject': subject})
     info.update({'message': body})
     return info
 
 
-if __name__=='__main__':
-    mail_info = mail_body(mail_info, free_space())
+if __name__ == '__main__':
+    data = get_data()
+    mail_info = mail_body(mail_info, data, partition)
     send_mail(mail_info)
