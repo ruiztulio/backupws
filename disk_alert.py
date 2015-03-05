@@ -11,12 +11,15 @@ parser.add_argument("--server", help="SMTP Server:Port",
                     default="smtp.gmail.com:587")
 parser.add_argument("-F", "--From", help="Sender's email address",
                     required=True)
-parser.add_argument("-T", "--To", help="Comma separated recipient's email list",
+parser.add_argument("-T", "--To",
+                    help="Comma separated recipient's email list",
                     required=True)
 parser.add_argument("-W", "--pswd", help="Email password", required=True)
-parser.add_argument("-P", "--partition", help="Partition to be evaluated",
+parser.add_argument("-P", "--partition",
+                    help=" Comma separated partitions to be evaluated",
                     required=True)
-parser.add_argument("-L", "--limit", help="Minimal free space before alert (Gb)",
+parser.add_argument("-L", "--limit",
+                    help="Minimal free space before alert (Gb)",
                     default=10)
 
 args = parser.parse_args()
@@ -25,7 +28,7 @@ mail_info = {'server': args.server,
              'login': args.From,
              'to': args.To.split(","),
              'pswd': args.pswd}
-partition = args.partition
+partition = args.partition.split(",")
 limit = int(args.limit)
 
 
@@ -57,26 +60,29 @@ def free_space(data, partition):
 
 
 def mail_body(info, limit, data, partition):
-    space = free_space(data, partition)
     table = "\t".join(data)
     name = str(uname(nodename=True)).split("\n")[0]
-    if space <= limit + 5:
+    space = []
+    for each in partition:
+        space.append(free_space(data, each))
+    if min(space) <= limit + 5:
         subject = "WARNING! "
-        if space <= limit:
+        if min(space) <= limit:
             subject = "RED ALERT! "
     subject += "Server %s out of space <no-reply>" % name
-    body = "Server %s is running out of space " % name
-    body += "in partition %s.\n\n" % partition
-    body += "It has %sG of free space\n\nMore info:\n\n" % space
+    body = "Server %s is running out of space.\n\n" % name
+    for each in partition:
+        if space[partition.index(each)] <= limit + 5:
+            body += "In partition %s: " % each
+            body += "%sG of free space\n" % space[partition.index(each)]
+    body += "\nMore info:\n\n"
     body += table
     body += "\nThis is an automatic message. Do not Reply!\n\nVauxoo."
     info.update({'subject': subject})
     info.update({'message': body})
-    return info
+    return send_mail(info)
 
 
 if __name__ == '__main__':
     data = get_data()
-    if free_space(data, partition) <= limit + 5:
-        mail_info = mail_body(mail_info, limit, data, partition)
-        send_mail(mail_info)
+    mail_body(mail_info, limit, data, partition)
