@@ -28,3 +28,24 @@ Else:
     python restore_db_ws.py database_name -H host_name -p odoo_xml_rpc_port -f route/to/file.tar.bz2
 
 Database name and file are mandaroty fields
+
+## Branches
+
+To save branches' info into a json file::
+
+    python branches.py -f json_file -p path_of_repo_structure -s
+
+To build branches using Json file made with **branches.py**::
+
+    python branches.py -f json_file -p path_of_repo_structure -l
+
+To update branches using Json file::
+
+    python branches.py -f json_file -p path_of_repo_structure --repo comma_separated_list_of_repo -u
+
+To reset branches to commits in Json file::
+
+    python branches.py -f json_file -p path_of_repo_structure --repo comma_separated_list_of_repo -r
+
+If path_of_repo_structure is not specified, current dir will be used
+Json_file is a mandatory field

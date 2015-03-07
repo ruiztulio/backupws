@@ -24,6 +24,50 @@ def clean_files(files):
         elif os.path.isdir(fname):
             shutil.rmtree(fname)
 
+
+def simplify_path(b_info):
+    """This function deletes all common directories in branches' path
+
+    Args:
+        b_info: List of dictionaries with branches' info
+
+    Returns:
+        List of dictionaries with branches' info
+    """
+    logger.debug("Deleting all common branches' path")
+    repeated = True
+    while repeated:
+        piece_path = []
+        for branch in b_info:
+            piece_path.append(branch['path'].split('/', 1)[0])
+        word = piece_path[0]
+        repeated = True
+        for each in piece_path:
+            if each != word:
+                repeated = False
+        if repeated:
+            for branch in b_info:
+                branch.update({'path': branch['path'].split('/', 1)[1]})
+    logger.debug("Common paths deleted")
+    return b_info
+
+
+def name_from_url(url):
+    """Takes name of a GIT repo from origin url
+
+    Args:
+        url (str): Url of GIT repo
+
+    Returns:
+        Repo's name
+    """
+    name = url
+    while '/' in name:
+        name = name.split('/', 1)[1]
+    name = name.split('.', 1)[0]
+    return name
+
+
 def compress_files(name, files, dest_folder=None):
     """ Compress a file, set of files or a folder in tar.bz2 format
 
