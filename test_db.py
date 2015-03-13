@@ -54,16 +54,20 @@ def create_test_db(db_file, db_config, temp_dir):
     if utils.database_exists(db_name, db_config['host'], db_config['port']):
         logger.error("Database %s already exits, aborting program", db_name)
         return 1
-    logger.info("Restoring database...")
-    dump_dest = utils.decompress_files(db_file, temp_dir)
-    utils.restore_database(dump_dest, db_name, db_config['pswd'],
-                           db_config['host'], db_config['port'])
-    logger.debug("Database restored")
-    utils.clean_files([dump_dest])
-    logger.info("Deactivating database...")
-    deactivate(db_name, db_config['user'], db_config['pswd'],
-               db_config['host'], db_config['port'])
-    logger.debug("Database deactivated")
+    try:
+        logger.info("Restoring database...")
+        dump_dest = utils.decompress_files(db_file, temp_dir)
+        utils.restore_database(dump_dest, db_name, db_config['pswd'],
+                               db_config['host'], db_config['port'])
+        logger.debug("Database restored")
+        utils.clean_files([dump_dest])
+        logger.info("Deactivating database...")
+        deactivate(db_name, db_config['user'], db_config['pswd'],
+                   db_config['host'], db_config['port'])
+        logger.debug("Database deactivated")
+    except Exception as e:
+        logger.error(e)
+        return 1
     return db_name
 
 
@@ -71,4 +75,5 @@ if __name__ == '__main__':
     logger.info("Creating %s database from %s backup", config, db_file)
     db_config = utils.load_json(json_file)
     db = create_test_db(db_file, db_config[config], tmp)
-    logger.info("Database %s created", db)
+    if db != 1:
+        logger.info("Database %s created", db)
