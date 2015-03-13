@@ -1,7 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+"""This script creates development-test OpenERP databases from
+backup files
+"""
 
-import json
 import logging
 import argparse
 
@@ -29,11 +31,19 @@ logger = logging.getLogger("testbd_creator")
 
 db_file = args.backup_file
 json_file = args.config_file
-config =args.config
+config = args.config
 tmp = args.temp_dir
 
 
-def create_test_db (db_file, db_config, temp_dir):
+def create_test_db(db_file, db_config, temp_dir):
+    """
+    This function creates a database from backup file with determined config
+
+    :param db_file: Backup file for database
+    :param db_config: Dict with database configuration
+    :param temp_dir: Temporary directory for dump
+    :return: Database name if succesful, 1 otherwise
+    """
     str_list = db_file.split(".")[0].split("-")
     db_name = str_list[0] + str_list[len(str_list) - 1]
     logger.debug("Database name: %s", db_name)
