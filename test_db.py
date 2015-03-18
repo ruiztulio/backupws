@@ -45,7 +45,7 @@ def create_test_db(db_file, db_config, temp_dir):
     :return: Database name if succesful, 1 otherwise
     """
     str_list = db_file.split(".")[0].split("-")
-    db_name = str_list[0] + str_list[len(str_list) - 1]
+    db_name = db_config['host'] + "_" + str_list[len(str_list) - 1]
     logger.debug("Database name: %s", db_name)
     if not utils.test_connection(db_name, db_config['host'], db_config['port'],
                                  db_config['user'], db_config['pswd'],
