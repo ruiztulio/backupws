@@ -4,6 +4,7 @@
 backup files
 """
 
+import os
 import logging
 import argparse
 
@@ -44,7 +45,7 @@ def create_test_db(db_file, db_config, temp_dir):
     :param temp_dir: Temporary directory for dump
     :return: Database name if succesful, 1 otherwise
     """
-    str_list = db_file.split(".")[0].split("-")
+    str_list = os.path.basename(db_file).split(".")[0].split("-")
     db_name = db_config['host'] + "_" + str_list[len(str_list) - 1]
     logger.debug("Database name: %s", db_name)
     if not utils.test_connection(db_name, db_config['host'], db_config['port'],
