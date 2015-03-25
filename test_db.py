@@ -58,7 +58,7 @@ def create_test_db(db_file, db_config, temp_dir):
     try:
         logger.info("Restoring database...")
         dump_dest = utils.decompress_files(db_file, temp_dir)
-        utils.restore_database(dump_dest, db_name, db_config['pswd'],
+        utils.restore_database(dump_dest, db_name, db_config['superpswd'],
                                db_config['host'], db_config['port'])
         logger.debug("Database restored")
         utils.clean_files([dump_dest])
