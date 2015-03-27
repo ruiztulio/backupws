@@ -36,17 +36,18 @@ config = args.config
 tmp = args.temp_dir
 
 
-def create_test_db(db_file, db_config, temp_dir):
+def create_test_db(prefix, db_file, db_config, temp_dir):
     """
     This function creates a database from backup file with determined config
 
+    :param prefix: Prefix for database name
     :param db_file: Backup file for database
     :param db_config: Dict with database configuration
     :param temp_dir: Temporary directory for dump
     :return: Database name if succesful, 1 otherwise
     """
     str_list = os.path.basename(db_file).split(".")[0].split("-")
-    db_name = db_config['host'] + "_" + str_list[len(str_list) - 1]
+    db_name = prefix + "_" + str_list[len(str_list) - 1].split("_", 1)[1]
     logger.debug("Database name: %s", db_name)
     if not utils.test_connection(db_name, db_config['host'], db_config['port'],
                                  db_config['user'], db_config['pswd'],
@@ -75,6 +76,6 @@ def create_test_db(db_file, db_config, temp_dir):
 if __name__ == '__main__':
     logger.info("Creating %s database from %s backup", config, db_file)
     db_config = utils.load_json(json_file)
-    db = create_test_db(db_file, db_config[config], tmp)
+    db = create_test_db(config, db_file, db_config[config], tmp)
     if db != 1:
         logger.info("Database %s created", db)
