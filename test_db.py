@@ -36,6 +36,39 @@ config = args.config
 tmp = args.temp_dir
 
 
+def restore_database(db_name, db_config, dump_dest, port):
+	"""This function restores and deactivates a database from a dump
+	
+	:param db_name: Database name
+	:param db_config: Dict with database configuration
+	:param dump_dest: Dump to be used
+	:param port: Config Port from db_config used for connection
+	:return: 1 if connection failed, 2 if database exists, db_name if
+	         succesfull
+	"""
+	if not utils.test_connection(db_name, db_config['host'],
+	                             db_config['port'][port],db_config['user'],
+	                             db_config['pswd'],only_connection=True):
+        return 1
+    if utils.database_exists(db_name, db_config['host'],
+                             db_config['port'][port]):
+        logger.error("Database %s already exists, aborting program", db_name)
+        return 2
+    try:
+        logger.info("Restoring database...")
+        utils.restore_database(dump_dest, db_name, db_config['superpswd'],
+                               db_config['host'], db_config['port'][port])
+        logger.debug("Database restored")
+        logger.info("Deactivating database...")
+        deactivate(db_name, db_config['user'], db_config['pswd'],
+                   db_config['host'], db_config['port'][port])
+        logger.debug("Database deactivated")
+    except Exception as e:
+		logger.error(e)
+		return 1
+    return db_name
+
+
 def create_test_db(prefix, db_file, db_config, temp_dir):
     """
     This function creates a database from backup file with determined config
@@ -44,33 +77,17 @@ def create_test_db(prefix, db_file, db_config, temp_dir):
     :param db_file: Backup file for database
     :param db_config: Dict with database configuration
     :param temp_dir: Temporary directory for dump
-    :return: Database name if succesful, 1 otherwise
+    :return: Database name if succesfull, 1 otherwise
     """
     str_list = os.path.basename(db_file).split(".")[0].split("-")
     db_name = prefix + "_" + str_list[len(str_list) - 1].split("_", 1)[1]
     logger.debug("Database name: %s", db_name)
-    if not utils.test_connection(db_name, db_config['host'], db_config['port'],
-                                 db_config['user'], db_config['pswd'],
-                                 only_connection=True):
-        return 1
-    if utils.database_exists(db_name, db_config['host'], db_config['port']):
-        logger.error("Database %s already exits, aborting program", db_name)
-        return 1
-    try:
-        logger.info("Restoring database...")
-        dump_dest = utils.decompress_files(db_file, temp_dir)
-        utils.restore_database(dump_dest, db_name, db_config['superpswd'],
-                               db_config['host'], db_config['port'])
-        logger.debug("Database restored")
-        utils.clean_files([dump_dest])
-        logger.info("Deactivating database...")
-        deactivate(db_name, db_config['user'], db_config['pswd'],
-                   db_config['host'], db_config['port'])
-        logger.debug("Database deactivated")
-    except Exception as e:
-        logger.error(e)
-        return 1
-    return db_name
+    dump_dest = utils.decompress_files(db_file, temp_dir)
+    result = restore_database(db_name, db_config, dump_dest, "xmlrpc")
+    if result == 1:
+		result = restore_database(db_name, db_config, dump_dest, "opt")
+    utils.clean_files([dump_dest])
+    return result
 
 
 if __name__ == '__main__':
