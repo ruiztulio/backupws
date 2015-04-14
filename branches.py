@@ -7,12 +7,13 @@ and reconstruct branches from such files
 import os
 import subprocess
 from git import Repo
-import json
 import logging
 import argparse
 
 from lib.utils import simplify_path
 from lib.utils import name_from_url
+from lib.utils import save_json
+from lib.utils import load_json
 
 logging.basicConfig(level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -89,15 +90,10 @@ def save_branches_info(info, json_file):
 
     :return: Absolute path of Json file
     """
-    logger.debug("Opening file %s", json_file)
-    with open(json_file, 'w') as fout:
-        logger.info("Dumping branches into file: %s", json_file)
-        json.dump(info, fout, sort_keys=True, indent=4, ensure_ascii=False,
-                  separators=(',', ':'))
-        if not os.path.isabs(json_file):
-            json_file = os.path.abspath(json_file)
-        logger.info("Branches dumped")
-        return json_file
+    logger.info("Dumping branches into file: %s", json_file)
+    json_file = save_json(info, json_file)
+    logger.info("Branches dumped")
+    return json_file
 
 
 def load_branches(json_file):
@@ -107,10 +103,8 @@ def load_branches(json_file):
     :param filename: File to be loaded
     :return: List of dictionaries
     """
-    logger.debug("Opening file %s", json_file)
-    with open(json_file, "r") as f:
-        logger.info("Loading branches from file %s", json_file)
-        repo_dict = json.load(f)
+    logger.info("Loading branches from file %s", json_file)
+    repo_dict = load_json(json_file)
     logger.info("Branches loaded")
     return repo_dict
 

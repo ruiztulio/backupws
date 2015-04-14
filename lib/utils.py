@@ -6,10 +6,49 @@ import bz2
 import logging
 import oerplib
 import socket
+import json
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('utils')
+
+
+def save_json(info, filename):
+    """Save info into Json file.
+
+    Args:
+        info: Object to be saved
+        filename: Name of Json file
+
+    Returns:
+        Absolute path of Json file
+    """
+    logger.debug("Opening file %s", filename)
+    try:
+        with open(filename, 'w') as fout:
+            json.dump(info, fout, sort_keys=True, indent=4, ensure_ascii=False,
+                      separators=(',', ':'))
+            if not os.path.isabs(filename):
+                filename = os.path.abspath(filename)
+            logger.debug("File saved")
+    except Exception as e:
+        logger.error(e)
+    return filename
+
+
+def load_json(filename):
+    """ Load info from Json file
+
+    Args:
+        filename: Name of Json file
+
+    Returns: Object loaded
+    """
+    logger.debug("Opening file %s", filename)
+    with open(filename, "r") as f:
+        info = json.load(f)
+        logger.debug("File loaded")
+        return info
 
 
 def clean_files(files):
@@ -88,6 +127,7 @@ def compress_files(name, files, dest_folder=None):
     bz2_file.close()
     return full_name
 
+
 def decompress_files(name, dest_folder):
     """ Decompress a file, set of files or a folder compressed in tar.bz2 format
 
@@ -116,6 +156,7 @@ def decompress_files(name, dest_folder):
     logger.debug("Destination folder: %s", dest_folder)
     return dest_folder
 
+
 def dump_database(dest_folder, database_name, super_user_pass, host, port):
     """ Dumps database using Oerplib in Base64 format
 
@@ -136,6 +177,7 @@ def dump_database(dest_folder, database_name, super_user_pass, host, port):
     with open(dump_name, "w") as fout:
         fout.write(binary_data)
     return dump_name
+
 
 def backup_database(database_name, dest_folder, user, password, host, port, reason=False, tmp_dir=False):
     """ Receive database name and back it up
@@ -168,6 +210,7 @@ def backup_database(database_name, dest_folder, user, password, host, port, reas
     clean_files(files)
     return full_name
 
+
 def backup_databases(databases_list, dest_folder,
                      user, password, host, port, reason=False, tmp_dir=False):
     """ Receive a list of databases and backup up them all
@@ -176,7 +219,9 @@ def backup_databases(databases_list, dest_folder,
         databases_list (list): The database list name that will be 
     """
     for database in databases_list:
-        backup_database(database, dest_folder, user, password, host, port, reason, tmp_dir)
+        backup_database(database, dest_folder, user, password, host, port,
+                        reason, tmp_dir)
+
 
 def restore_database(dest_folder, database_name, super_user_pass, host, port):
     """ Restore database using Oerplib in Base64 format
@@ -193,8 +238,11 @@ def restore_database(dest_folder, database_name, super_user_pass, host, port):
     logger.debug("Restore dump - reading file %s", dump_name)
     with open(dump_name, "r") as fin:
         b64_str = fin.read()
+        logger.debug("File loaded")
     oerp = oerplib.OERP(host, protocol='xmlrpc', port=port, timeout=3000)
+    logger.debug("Connection to OERP established, restoring...")
     oerp.db.restore(super_user_pass, database_name, b64_str)
+
 
 def database_exists(database_name, host, port=8069, timeout=3000):
     """ Check if a given database exists
@@ -212,6 +260,7 @@ def database_exists(database_name, host, port=8069, timeout=3000):
     logger.debug("Checking if database exists")
     oerp = oerplib.OERP(host, protocol='xmlrpc', port=port, timeout=timeout)
     return oerp.db.db_exist(database_name)
+
 
 def test_connection(db_name, host=False, port=8069, user=False,
                     password=False, timeout=60, only_connection=False):
