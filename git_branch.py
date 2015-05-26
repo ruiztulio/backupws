@@ -59,6 +59,10 @@ class GitBranch(object):
             except Exception as e:
                 self.logger.error(e)
 
+    def __update(self, path, branch):
+        repo = Repo(path)
+        repo.remotes.origin.pull(branch)
+
     def update_branches(self, path, info, branches):
         branches_updated = []
         for branch in info:
@@ -66,9 +70,9 @@ class GitBranch(object):
                 self.logger.debug("Repo %s found", branch['name'])
                 self.logger.debug("Pull from %s - branch %s",
                                   branch['repo_url'], branch['branch'])
-                repo = Repo(os.path.join(path, branch['path']))
                 try:
-                    repo.remotes.origin.pull(branch['branch'])
+                    self.__update(os.path.join(path, branch['path']),
+                                  branch['branch'])
                     self.logger.info("Repo %s updated", branch['name'])
                     branches_updated.append(branch['name'])
                 except Exception as e:
