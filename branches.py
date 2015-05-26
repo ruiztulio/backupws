@@ -25,7 +25,6 @@ parser.add_argument("-p", "--path",
                     default=False)
 parser.add_argument("--repo", help="Comma separated list of repositories",
                     default=None)
-parser.add_argument("--bzr", help="Bzr Branches info", action="store_true")
 action = parser.add_mutually_exclusive_group(required=True)
 action.add_argument("-s", "--save", help="Create Json file from Repo",
                     action="store_true")
@@ -48,7 +47,6 @@ save = args.save
 load = args.load
 update = args.update
 reset = args.reset
-bzr = args.bzr
 
 
 def get_all_branches_info(branch, path, bzrbranch):
@@ -59,10 +57,9 @@ def get_all_branches_info(branch, path, bzrbranch):
     """
     logger.info("Collecting branches in %s", path)
     res = branch.get_branches(path)
-    if bzrbranch:
-        bzr_branches = bzrbranch.get_branches(path)
-        for each in bzr_branches:
-            res.append(each)
+    bzr_branches = bzrbranch.get_branches(path)
+    for each in bzr_branches:
+        res.append(each)
     logger.info("Branches collected")
     return res
 
@@ -133,10 +130,7 @@ def reset_branches(branch, info, branches):
 
 if __name__ == '__main__':
     gitbranch = GitBranch()
-    if bzr:
-        bzrbranch = BzrBranch()
-    else:
-        bzrbranch = None
+    bzrbranch = BzrBranch()
     if save:
         b_info = get_all_branches_info(gitbranch, path, bzrbranch)
         b_info = simplify_path(b_info)
