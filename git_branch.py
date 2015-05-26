@@ -6,6 +6,7 @@ from lib.utils import name_from_url
 
 
 class GitBranch(object):
+
     def __init__(self):
         self.__info = None
         logging.basicConfig(
@@ -30,7 +31,8 @@ class GitBranch(object):
                         'commit': str(repo.head.reference.commit),
                         'is_dirty': repo.is_dirty(),
                         'name': name_from_url(str(repo.remotes.origin.url)),
-                        'depth': 1})
+                        'depth': 1,
+                        'type': "git"})
                     res.append(info)
                     self.logger.debug("Branch collected")
                 else:
@@ -86,7 +88,10 @@ class GitBranch(object):
         return branches_reset
 
     def set_info(self, info):
-        self.__info = info
+        self.__info = []
+        for branch in info:
+            if branch['type'] == "git":
+                self.__info.append(branch)
         return self.__info
 
     def get_info(self):

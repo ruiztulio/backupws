@@ -6,10 +6,11 @@ and reconstruct branches from such files
 
 import os
 import subprocess
-from git_branch import GitBranch
 import logging
 import argparse
 
+from git_branch import GitBranch
+from bzr_branch import BzrBranch
 from lib.utils import simplify_path
 from lib.utils import name_from_url
 from lib.utils import save_json
@@ -26,6 +27,7 @@ parser.add_argument("-p", "--path",
                     default=False)
 parser.add_argument("--repo", help="Comma separated list of repositories",
                     default=None)
+parser.add_argument("--bzr", help="Bzr Branches info", action="store_true")
 action = parser.add_mutually_exclusive_group(required=True)
 action.add_argument("-s", "--save", help="Create Json file from Repo",
                     action="store_true")
@@ -48,16 +50,21 @@ save = args.save
 load = args.load
 update = args.update
 reset = args.reset
+bzr = args.bzr
 
 
-def get_all_branches_info(branch, path):
+def get_all_branches_info(branch, path, bzrbranch):
     """This function get branches info and saves it in a list of dict
 
     :param path: Path of directory to be inspected
     :return: List of dictionaries
     """
-    logger.info("Colleting branches in %s", path)
+    logger.info("Collecting branches in %s", path)
     res = branch.get_branches(path)
+    if bzrbranch:
+        bzr_branches = bzrbranch.get_branches(path)
+        for each in bzr_branches:
+            res.append(each)
     logger.info("Branches collected")
     return res
 
@@ -128,8 +135,12 @@ def reset_branches(branch, info, branches):
 
 if __name__ == '__main__':
     gitbranch = GitBranch()
+    if bzr:
+        bzrbranch = BzrBranch()
+    else:
+        bzrbranch = None
     if save:
-        b_info = get_all_branches_info(gitbranch, path)
+        b_info = get_all_branches_info(gitbranch, path, bzrbranch)
         b_info = simplify_path(b_info)
         save_branches_info(b_info, filename)
     if load:
