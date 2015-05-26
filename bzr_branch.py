@@ -5,8 +5,6 @@ from bzrlib.plugin import load_plugins
 load_plugins()
 from bzrlib.branch import Branch
 
-from lib.utils import name_from_url
-
 
 class BzrBranch(object):
 

@@ -5,14 +5,12 @@ and reconstruct branches from such files
 """
 
 import os
-import subprocess
 import logging
 import argparse
 
 from git_branch import GitBranch
 from bzr_branch import BzrBranch
 from lib.utils import simplify_path
-from lib.utils import name_from_url
 from lib.utils import save_json
 from lib.utils import load_json
 
