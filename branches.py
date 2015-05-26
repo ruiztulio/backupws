@@ -6,7 +6,7 @@ and reconstruct branches from such files
 
 import os
 import subprocess
-from git import Repo
+from git_branch import GitBranch
 import logging
 import argparse
 
@@ -17,7 +17,7 @@ from lib.utils import load_json
 
 logging.basicConfig(level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger('info_branchs')
+logger = logging.getLogger('info_branches')
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-f", "--json_file", help="Json file to use", required=True)
@@ -50,35 +50,15 @@ update = args.update
 reset = args.reset
 
 
-def get_all_branches_info(path):
+def get_all_branches_info(branch, path):
     """This function get branches info and saves it in a list of dict
 
     :param path: Path of directory to be inspected
     :return: List of dictionaries
     """
-    res = []
-    for lFile in os.listdir(path):
-        p = os.path.join(path, lFile)
-        if os.path.isdir(p) \
-                and lFile not in ['.', '..'] \
-                and not os.path.islink(p):
-            if lFile == '.git':
-                logger.debug("Found a git folder %s", p)
-                info = {}
-                repo = Repo(p)
-                info.update({'path': path,
-                    'repo_url': str(repo.remotes.origin.url),
-                    'branch': str(repo.head.ref),
-                    'commit': str(repo.head.reference.commit),
-                    'is_dirty': repo.is_dirty(),
-                    'name': name_from_url(str(repo.remotes.origin.url)),
-                    'depth': 1})
-                res.append(info)
-                logger.info("Branch collected")
-            else:
-                r = get_all_branches_info(p)
-                if r:
-                    res = res + r
+    logger.info("Colleting branches in %s", path)
+    res = branch.get_branches(path)
+    logger.info("Branches collected")
     return res
 
 
@@ -109,50 +89,30 @@ def load_branches(json_file):
     return repo_dict
 
 
-def set_branches(info):
+def set_branches(branch):
     """This function builds branches using settings from a list of dictionaries
 
     :param info: List of dictionaries containing branches' info
     """
-    logger.info("Cloning branches...")
-    for branch in info:
-        logger.debug("Cloning repo: %s - branch: %s - path: %s",
-                     branch['repo_url'], branch['branch'],
-                     os.path.join(path, branch['path']))
-        depth = branch.get('depth', False)
-        try:
-            repo = Repo.clone_from(branch['repo_url'],
-                                   os.path.join(path, branch['path']),
-                                   branch=branch['branch'], depth=depth)
-            logger.info("Branch %s cloned", branch['path'])
-        except Exception as e:
-            logger.error(e)
+    logger.info("Cloning branches")
+    branch.set_branches(path)
+    logger.info("Branches cloned")
 
 
-def update_branches(info, branches):
+def update_branches(branch, info, branches):
     """This function executes GIT PULL to listed repositories
 
     :param info: List of dictionaries containing branches' info
     :param branches: List of branches to be updated
     """
     logger.info("Updating branches...")
-    for branch in info:
-        if branch['name'] in branches:
-            logger.debug("Repo %s FOUND", branch['name'])
-            logger.debug("Pull from %s - branch %s", branch['repo_url'],
-                         branch['branch'])
-            repo = Repo(os.path.join(path, branch['path']))
-            try:
-                repo.remotes.origin.pull(branch['branch'])
-                logger.info("Repo %s updated", branch['name'])
-            except Exception as e:
-                logger.error(e)
-            branches.remove(branch['name'])
+    success = branch.update_branches(path, info, branches)
     for name in branches:
-        logger.warning("Repo %s NOT FOUND", name)
+        if name not in success:
+            logger.warning("Repo %s NOT UPDATED", name)
 
 
-def reset_branches(info, branches):
+def reset_branches(branch, info, branches):
     """This function resets hardly all branches to the commits specified in
     dicts info
 
@@ -160,34 +120,26 @@ def reset_branches(info, branches):
     :param branches: List of branches to be reset
     """
     logger.info("Resetting branches...")
-    for branch in info:
-        if branch['name'] in branches:
-            repo = Repo(os.path.join(path, branch['path']))
-            try:
-                logger.debug("Resetting branch %s to commit %s", branch['name'],
-                             branch['commit'])
-                repo.git.reset(branch['commit'], '--hard')
-                logger.info("Branch %s reset", branch['name'])
-            except Exception as e:
-                logger.error(e)
-            branches.remove(branch['name'])
+    success = branch.reset_branches(path, info, branches)
     for name in branches:
-        logger.warning("Repo %s NOT FOUND", name)
+        if name not in success:
+            logger.warning("Repo %s NOT RESET", name)
 
 
 if __name__ == '__main__':
+    gitbranch = GitBranch()
     if save:
-        b_info = get_all_branches_info(path)
+        b_info = get_all_branches_info(gitbranch, path)
         b_info = simplify_path(b_info)
         save_branches_info(b_info, filename)
     if load:
-        b_info = load_branches(filename)
-        set_branches(b_info)
+        gitbranch.set_info(load_branches(filename))
+        set_branches(gitbranch)
     if update:
         b_info = load_branches(filename)
-        update_branches(b_info, branches)
+        update_branches(gitbranch, b_info, branches)
     if reset:
         b_info = load_branches(filename)
-        reset_branches(b_info, branches)
+        reset_branches(gitbranch, b_info, branches)
 
     #_apply_recursive('/home/truiz/working/backupws')
