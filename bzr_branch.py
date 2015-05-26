@@ -30,9 +30,7 @@ class BzrBranch(object):
                     repo = Branch.open(path)
                     info.update({'path': path,
                         'parent': str(repo.get_parent()),
-                        #'master': path,
                         'revno': str(repo.revno()),
-                        #'name': name_from_url(str(repo.remotes.origin.url)),
                         'type': "bzr"})
                     res.append(info)
                     self.logger.debug("Branch collected")
