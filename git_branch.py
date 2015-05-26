@@ -14,6 +14,19 @@ class GitBranch(object):
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         self.logger = logging.getLogger('git_branches')
 
+    def __get_branch(self, path):
+        info = {}
+        repo = Repo(path)
+        info.update({'path': str(os.path.dirname(path)),
+                     'repo_url': str(repo.remotes.origin.url),
+                     'branch': str(repo.head.ref),
+                     'commit': str(repo.head.reference.commit),
+                     'is_dirty': repo.is_dirty(),
+                     'name': name_from_url(str(repo.remotes.origin.url)),
+                     'depth': 1,
+                     'type': "git"})
+        return info
+
     def get_branches(self, path):
         res = []
         for lFile in os.listdir(path):
@@ -22,18 +35,8 @@ class GitBranch(object):
                     and lFile not in ['.', '..'] \
                     and not os.path.islink(p):
                 if lFile == '.git':
-                    self.logger.info("Found a git branch %s", p)
-                    info = {}
-                    repo = Repo(p)
-                    info.update({'path': path,
-                        'repo_url': str(repo.remotes.origin.url),
-                        'branch': str(repo.head.ref),
-                        'commit': str(repo.head.reference.commit),
-                        'is_dirty': repo.is_dirty(),
-                        'name': name_from_url(str(repo.remotes.origin.url)),
-                        'depth': 1,
-                        'type': "git"})
-                    res.append(info)
+                    self.logger.info("Found a git branch %s", path)
+                    res.append(self.__get_branch(p))
                     self.logger.debug("Branch collected")
                 else:
                     r = self.get_branches(p)
