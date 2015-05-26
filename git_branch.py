@@ -1,5 +1,4 @@
 import os
-import subprocess
 from git import Repo
 import logging
 
@@ -44,8 +43,8 @@ class GitBranch(object):
     def set_branches(self, path):
         for branch in self.__info:
             self.logger.debug("Cloning repo: %s - branch: %s - path: %s",
-                         branch['repo_url'], branch['branch'],
-                         os.path.join(path, branch['path']))
+                              branch['repo_url'], branch['branch'],
+                              os.path.join(path, branch['path']))
             depth = branch.get('depth', False)
             try:
                 repo = Repo.clone_from(branch['repo_url'],
@@ -59,9 +58,9 @@ class GitBranch(object):
         branches_updated = []
         for branch in info:
             if branch['name'] in branches:
-                self.logger.debug("Repo %s FOUND", branch['name'])
-                self.logger.debug("Pull from %s - branch %s", branch['repo_url'],
-                             branch['branch'])
+                self.logger.debug("Repo %s found", branch['name'])
+                self.logger.debug("Pull from %s - branch %s",
+                                  branch['repo_url'], branch['branch'])
                 repo = Repo(os.path.join(path, branch['path']))
                 try:
                     repo.remotes.origin.pull(branch['branch'])
@@ -77,8 +76,8 @@ class GitBranch(object):
             if branch['name'] in branches:
                 repo = Repo(os.path.join(path, branch['path']))
                 try:
-                    self.logger.debug("Resetting branch %s to commit %s", branch['name'],
-                                 branch['commit'])
+                    self.logger.debug("Resetting branch %s to commit %s",
+                                      branch['name'], branch['commit'])
                     repo.git.reset(branch['commit'], '--hard')
                     self.logger.info("Branch %s reset", branch['name'])
                     branches_reset.append(branch['name'])
