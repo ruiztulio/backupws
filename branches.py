@@ -97,24 +97,27 @@ def set_branches(branch):
     :param info: List of dictionaries containing branches' info
     """
     logger.info("Cloning branches")
-    branch.set_branches(path)
-    logger.info("Branches cloned")
+    success = branch.set_branches(path)
+    branch.update_info(path)
+    for name in branch.get_info():
+        if name['name'] not in success:
+            logger.warning("Repo %s NOT LOADED")
 
 
-def update_branches(branch, info, branches):
+def update_branches(branch, branches):
     """This function executes GIT PULL to listed repositories
 
     :param info: List of dictionaries containing branches' info
     :param branches: List of branches to be updated
     """
     logger.info("Updating branches...")
-    success = branch.update_branches(path, info, branches)
+    success = branch.update_branches(path, branches)
     for name in branches:
         if name not in success:
             logger.warning("Repo %s NOT UPDATED", name)
 
 
-def reset_branches(branch, info, branches):
+def reset_branches(branch, branches):
     """This function resets hardly all branches to the commits specified in
     dicts info
 
@@ -122,7 +125,7 @@ def reset_branches(branch, info, branches):
     :param branches: List of branches to be reset
     """
     logger.info("Resetting branches...")
-    success = branch.reset_branches(path, info, branches)
+    success = branch.reset_branches(path, branches)
     for name in branches:
         if name not in success:
             logger.warning("Repo %s NOT RESET", name)
@@ -132,17 +135,18 @@ if __name__ == '__main__':
     gitbranch = GitBranch()
     bzrbranch = BzrBranch()
     if save:
-        b_info = get_all_branches_info(gitbranch, path, bzrbranch)
-        b_info = simplify_path(b_info)
-        save_branches_info(b_info, filename)
+        try:
+            b_info = get_all_branches_info(gitbranch, path, bzrbranch)
+            b_info = simplify_path(b_info)
+            save_branches_info(b_info, filename)
+        except Exception as e:
+            logger.error(e)
     if load:
         gitbranch.set_info(load_branches(filename))
         set_branches(gitbranch)
     if update:
-        b_info = load_branches(filename)
-        update_branches(gitbranch, b_info, branches)
+        gitbranch.set_info(load_branches(filename))
+        update_branches(gitbranch, branches)
     if reset:
-        b_info = load_branches(filename)
-        reset_branches(gitbranch, b_info, branches)
-
-    #_apply_recursive('/home/truiz/working/backupws')
+        gitbranch.set_info(load_branches(filename))
+        reset_branches(gitbranch, branches)
