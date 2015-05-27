@@ -142,11 +142,20 @@ if __name__ == '__main__':
         except Exception as e:
             logger.error(e)
     if load:
-        gitbranch.set_info(load_branches(filename))
-        set_branches(gitbranch)
+        try:
+            gitbranch.set_info(load_branches(filename))
+            set_branches(gitbranch)
+        except Exception as e:
+            logger.error(e)
     if update:
-        gitbranch.set_info(load_branches(filename))
-        update_branches(gitbranch, branches)
+        try:
+            gitbranch.set_info(load_branches(filename))
+            update_branches(gitbranch, branches)
+        except Exception as e:
+            logger.error(e)
     if reset:
-        gitbranch.set_info(load_branches(filename))
-        reset_branches(gitbranch, branches)
+        try:
+            gitbranch.set_info(load_branches(filename))
+            reset_branches(gitbranch, branches)
+        except Exception as e:
+            logger.error(e)
