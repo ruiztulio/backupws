@@ -45,16 +45,21 @@ class GitBranch(object):
         self.__info = res
         return self.__info
 
+    def __clone(self, path, branch):
+        depth = branch.get('depth', False)
+        repo = Repo.clone_from(branch['repo_url'],
+                               os.path.join(path, branch['path']),
+                               branch=branch['branch'], depth=depth)
+        return repo
+
+
     def set_branches(self, path):
         for branch in self.__info:
             self.logger.debug("Cloning repo: %s - branch: %s - path: %s",
                               branch['repo_url'], branch['branch'],
                               os.path.join(path, branch['path']))
-            depth = branch.get('depth', False)
             try:
-                repo = Repo.clone_from(branch['repo_url'],
-                                       os.path.join(path, branch['path']),
-                                       branch=branch['branch'], depth=depth)
+                repo = self.__clone(path, branch)
                 self.logger.info("Branch %s cloned", branch['path'])
             except Exception as e:
                 self.logger.error(e)
