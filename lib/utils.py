@@ -74,19 +74,24 @@ def simplify_path(b_info):
         List of dictionaries with branches' info
     """
     logger.debug("Deleting all common branches' path")
-    repeated = True
-    while repeated:
-        piece_path = []
-        for branch in b_info:
-            piece_path.append(branch['path'].split('/', 1)[0])
-        word = piece_path[0]
+    if len(b_info) > 1:
         repeated = True
-        for each in piece_path:
-            if each != word:
-                repeated = False
-        if repeated:
+        while repeated:
+            piece_path = []
             for branch in b_info:
-                branch.update({'path': branch['path'].split('/', 1)[1]})
+                piece_path.append(branch['path'].split('/', 1)[0])
+            word = piece_path[0]
+            repeated = True
+            for each in piece_path:
+                if each != word:
+                    repeated = False
+            if repeated:
+                for branch in b_info:
+                    branch.update({'path': branch['path'].split('/', 1)[1]})
+    else:
+        if len(b_info) > 0:
+            branch = b_info[0]
+            branch.update({'path': os.path.basename(branch['path'])})
     logger.debug("Common paths deleted")
     return b_info
 
