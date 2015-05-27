@@ -79,15 +79,19 @@ class GitBranch(object):
                     self.logger.error(e)
         return branches_updated
 
+    def __reset(self, path, commit):
+        repo = Repo(path)
+        repo.git.reset(commit, "--hard")
+
     def reset_branches(self, path, info, branches):
         branches_reset = []
         for branch in info:
             if branch['name'] in branches:
-                repo = Repo(os.path.join(path, branch['path']))
                 try:
                     self.logger.debug("Resetting branch %s to commit %s",
                                       branch['name'], branch['commit'])
-                    repo.git.reset(branch['commit'], '--hard')
+                    self.__reset(os.path.join(path, branch['path']),
+                                 branch['commit'])
                     self.logger.info("Branch %s reset", branch['name'])
                     branches_reset.append(branch['name'])
                 except Exception as e:
