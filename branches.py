@@ -137,8 +137,8 @@ if __name__ == '__main__':
     if save:
         try:
             b_info = get_all_branches_info(gitbranch, path, bzrbranch)
-            save_branches_info(b_info, filename)
             b_info = simplify_path(b_info)
+            save_branches_info(b_info, filename)
         except Exception as e:
             logger.error(e)
     if load:

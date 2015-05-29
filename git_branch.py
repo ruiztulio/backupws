@@ -88,14 +88,15 @@ class GitBranch(object):
 
     def __update(self, path, branch):
         repo = Repo(path)
-        repo.remotes.origin.pull(branch)
+        repo.remotes[0].pull(branch)
 
     def update_branches(self, path, branches):
         branches_updated = []
         for branch in self.__info:
             if branch['name'] in branches:
                 self.logger.debug("Pull from %s - branch %s",
-                                  branch['repo_url'], branch['branch'])
+                                  branch['repo_url'].values()[0],
+                                  branch['branch'])
                 try:
                     self.__update(os.path.join(path, branch['path']),
                                   branch['branch'])
