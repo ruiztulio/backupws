@@ -19,14 +19,19 @@ class GitBranch(object):
         try:
             repo = Repo(path)
             info.update({'path': str(os.path.dirname(path)),
-                         'repo_url': str(repo.remotes.origin.url),
                          'branch': str(repo.head.ref),
                          'commit': str(repo.head.reference.commit),
                          'is_dirty': repo.is_dirty(),
-                         'name': name_from_url(str(repo.remotes.origin.url)),
+                         'name': name_from_url(str(repo.remotes[0].url)),
                          'depth': 1,
                          'type': "git"})
+            urls = {}
+            remotes = repo.remotes
+            for each in remotes:
+                urls.update({each.name: each.url})
+            info.update({'repo_url': urls})
         except Exception as e:
+            self.logger.error(e)
             return {0: str(e)}
         return info
 
