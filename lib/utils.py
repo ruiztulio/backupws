@@ -298,6 +298,16 @@ def test_connection(db_name, host=False, port=8069, user=False,
         else:
             logger.warn("Connection could be stablished," + \
                         "but for some reason version number couldn't be gotten")
+    try:
+        oerp_dblist = oerp.db.list(password)
+        logger.info("Odoo server is able to connect to PostgreSQL")
+    except oerplib.error.RPCError as error_obj:
+        if "OperationalError: could not connect to server: No route to host" in str(error_obj):
+            logger.error("Odoo instance is not able to connect to PostgreSQL server, check configuration")
+        else:
+            raise
+        return False
+
     if not only_connection:
         try:
             oerp.login(user, password, db_name)
