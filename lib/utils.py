@@ -179,7 +179,8 @@ def dump_database(dest_folder, database_name, super_user_pass, host, port):
     return dump_name
 
 
-def backup_database(database_name, dest_folder, user, password, host, port, reason=False, tmp_dir=False):
+def backup_database(database_name, dest_folder, user, password, host, port,
+                    reason=False, tmp_dir=False, keep_path=False):
     """ Receive database name and back it up
 
     Args:
@@ -192,6 +193,7 @@ def backup_database(database_name, dest_folder, user, password, host, port, reas
         reason (str): Optional parameter that is used in case 
                       there is a particular reason for the backup
         tmp_dir (str): Optional parameter to store the temporary working dir, default is /tmp
+        keep_path (str): Optional parameter to keep the latest dump in case is needed later
 
     Returns:
         Full path to the backup
@@ -204,15 +206,20 @@ def backup_database(database_name, dest_folder, user, password, host, port, reas
         file_name = '%s_%s'%(database_name, datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
     logger.info("Dumping database")
     dbase = dump_database(tmp_dir, database_name, password, host, port)
-    files.append(os.path.join(tmp_dir, dbase))
     logger.info("Compressing dump %s", dbase)
     full_name = compress_files(file_name, files, dest_folder)
+    if keep_path:
+        backup_name = os.path.basename(dbase)
+        dest_path = os.path.join(keep_path, backup_name)
+        shutil.move(dbase, dest_path)
+    else:
+        files.append(os.path.join(tmp_dir, dbase))
     clean_files(files)
     return full_name
 
 
 def backup_databases(databases_list, dest_folder,
-                     user, password, host, port, reason=False, tmp_dir=False):
+                     user, password, host, port, reason=False, tmp_dir=False, keep_path=False):
     """ Receive a list of databases and backup up them all
 
     Args:
@@ -220,7 +227,7 @@ def backup_databases(databases_list, dest_folder,
     """
     for database in databases_list:
         backup_database(database, dest_folder, user, password, host, port,
-                        reason, tmp_dir)
+                        reason, tmp_dir, keep_path=keep_path)
 
 
 def restore_database(dest_folder, database_name, super_user_pass, host, port):

@@ -34,6 +34,8 @@ def main(main_args):
                         help="Odoo super user", default="admin")
     parser.add_argument("-w", "--password", help="Odoo super user pass",
                         default="admin")
+    parser.add_argument("-k", "--keep_latest", help="Keep the lastest generated backup without compression in the specified folder",
+                        default=False)
 
     args = parser.parse_args(main_args)
     db_list = [x.strip() for x in args.dbs.split(',')]
@@ -43,7 +45,8 @@ def main(main_args):
         return 1
     utils.backup_databases(db_list, args.backup_dir, args.user,
                            args.password, args.host, args.port,
-                           args.reason, args.temp_dir)
+                           args.reason, args.temp_dir,
+                           keep_path=args.keep_latest)
 
 
 if __name__ == '__main__':
