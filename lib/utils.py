@@ -303,7 +303,10 @@ def test_connection(db_name, host=False, port=8069, user=False,
         logger.info("Odoo server is able to connect to PostgreSQL")
     except oerplib.error.RPCError as error_obj:
         if "OperationalError: could not connect to server: No route to host" in str(error_obj):
-            logger.error("Odoo instance is not able to connect to PostgreSQL server, check configuration")
+            logger.error("Odoo instance is NOT able to connect to PostgreSQL server, check configuration")
+        elif "OperationalError: could not connect to server: Connection refused" in str(error_obj):
+            logger.error("Odoo instance is able to connect to PostgreSQL server, but connection was refused")
+            logger.error("Hint: Check Odoo configuration")
         else:
             raise
         return False
