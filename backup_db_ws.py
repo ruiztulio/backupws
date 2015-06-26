@@ -47,9 +47,11 @@ def main(main_args):
                            args.password, args.host, args.port,
                            args.reason, args.temp_dir,
                            keep_path=args.keep_latest)
-
+    return 0
 
 if __name__ == '__main__':
     logger.info("Starting backup process")
-    main(sys.argv[1:])
-    logger.info("Backup process has finished")
+    res = main(sys.argv[1:])
+    if res == 0:
+        logger.info("Backup process has finished")
+    sys.exit(res)
