@@ -7,6 +7,11 @@ import logging
 import oerplib
 import socket
 import json
+import ConfigParser
+import subprocess
+import spur
+import shlex
+import collections
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -123,7 +128,10 @@ def compress_files(name, files, dest_folder=None):
     bz2_file = bz2.BZ2File(full_name, mode='w', compresslevel=9)
     with tarfile.open(mode='w', fileobj=bz2_file) as tar_bz2_file:
         for fname in files:
-            tar_bz2_file.add(fname, os.path.join(name, os.path.basename(fname)))
+            if hasattr(fname, '__iter__'):
+                tar_bz2_file.add(fname[0], os.path.join(name, fname[1]))
+            else:
+                tar_bz2_file.add(fname, os.path.join(name, os.path.basename(fname)))
     bz2_file.close()
     return full_name
 
@@ -301,3 +309,49 @@ def test_connection(db_name, host=False, port=8069, user=False,
             logger.info("User '%s' could connect to the" + \
                         "instance properly with the supplied password", user)
     return True
+
+def pase_odoo_configfile(filename):
+    """Receive a odoo config file and parse it ti get the parameters needed to backup the database
+
+    Args:
+        filename (str): Full path to the Odoo config file
+
+    Returns:
+        dict with the needed configuration parameter"""
+
+    config = ConfigParser.ConfigParser()
+    res = {}
+    try:
+        config.readfp(open(filename))
+    except IOError:
+        logger.error('configuration file "%s" not found',  filename)
+        return None
+    res.update({'db_host' : config.get('options', 'db_host')})
+    res.update({'db_port' : config.get('options', 'db_port')})
+    res.update({'db_user' : config.get('options', 'db_user')})
+    res.update({'db_password' : config.get('options', 'db_password')})
+    res.update({'data_dir' : config.get('options', 'data_dir')})
+    
+    return res
+
+def pgdump_database(dest_folder, database_config):
+    """ Dumps database using pg_dump in sql format
+
+    Args:
+        dest_folder (str): Folder where the function will save the dump
+        database_config (dict): Database configuration parameters needed to execute pg_dump
+    Returns:
+        The full dump path and name with .sql extension
+    """
+    logger.debug("Dumping database %s into %s folder", database_config.get('database'), dest_folder)
+    dump_name = os.path.join(dest_folder, 'database_dump.sql')
+    os.environ['PGPASSWORD'] = database_config.get('db_password')
+    dump_cmd = 'pg_dump {database} -O -f {0} -p {db_port} -h {db_host} -U {db_user}'.format(dump_name, **database_config)
+    print dump_cmd
+    shell = spur.LocalShell()
+    try:
+        result = shell.run(shlex.split(dump_cmd))
+    except spur.results.RunProcessError as e:
+        logger.error('Could not dump database, error message: %s', e.stderr_output)
+        return None
+    return dump_name
