@@ -19,7 +19,8 @@ logging.basicConfig(level=logging.DEBUG,
 logger = logging.getLogger('info_branches')
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-f", "--json_file", help="Json file to use", required=True)
+parser.add_argument("-f", "--json_file", help="Json file to use",
+                    required=True)
 parser.add_argument("-p", "--path",
                     help="Path of GIT Repo, actual dir by default",
                     default=False)
@@ -30,10 +31,10 @@ action.add_argument("-s", "--save", help="Create Json file from Repo",
                     action="store_true")
 action.add_argument("-l", "--load", help="Reconstruct Repo from Json file",
                     action="store_true")
-action.add_argument("-u", "--update", help="Update a list of repositories",
+action.add_argument("-u", "--update",
+                    help="Resets HARD repositories to commits from Json file",
                     action="store_true")
-action.add_argument("-r", "--reset",
-                    help="Resets HARD all branches to commits from Json file",
+action.add_argument("--pull", help="Pulls updates to a list of repositories",
                     action="store_true")
 
 args = parser.parse_args()
@@ -46,7 +47,7 @@ if args.repo:
 save = args.save
 load = args.load
 update = args.update
-reset = args.reset
+pull = args.pull
 
 
 def get_all_branches_info(branch, path, bzrbranch):
@@ -147,13 +148,13 @@ if __name__ == '__main__':
             set_branches(gitbranch)
         except Exception as e:
             logger.error(e)
-    if update:
+    if pull:
         try:
             gitbranch.set_info(load_branches(filename))
             update_branches(gitbranch, branches)
         except Exception as e:
             logger.error(e)
-    if reset:
+    if update:
         try:
             gitbranch.set_info(load_branches(filename))
             reset_branches(gitbranch, branches)
