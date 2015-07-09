@@ -20,7 +20,9 @@ def main(main_args):
     parser.add("-d", "--database", help="Database name to backup",
         default=False)
     parser.add('-o', '--odoo_configfile', 
-        help='Config file path', required=True)
+        help='Config file path (mutually exclusive with -f option)', default=False)
+    parser.add('-f', '--from_docker', 
+        help='Docker container which has the configuration (mutually exclusive with -o option)', default=False)
     parser.add('-c', '--config_file', 
         help='Config file path', is_config_file=True)
     parser.add("-t", "--temp_dir", help="Temp working dir",
@@ -32,11 +34,22 @@ def main(main_args):
         default=False)
 
     args = parser.parse_args(main_args)
-    odoo_cfg = utils.pase_odoo_configfile(args.odoo_configfile)
+    if (args.from_docker and args.odoo_configfile) or \
+        (not args.from_docker and not args.odoo_configfile):
+        print "You must specify one of two options -o or -f\n\n"
+        print(parser.format_help())
+        return 1
+    if args.odoo_configfile:
+        odoo_cfg = utils.pase_odoo_configfile(args.odoo_configfile)
+    elif args.from_docker:
+        odoo_cfg =  utils.parse_docker_config(args.from_docker)
     odoo_cfg.update({'database': args.database})
     dump_name = utils.pgdump_database('/tmp', odoo_cfg)
-    attachments_folder = os.path.join(odoo_cfg.get('data_dir'), 'filestore', odoo_cfg.get('database'))
-    utils.compress_files('test_backup', [dump_name, (attachments_folder, 'filestore')])
+    if odoo_cfg.get('data_dir'):
+        attachments_folder = os.path.join(odoo_cfg.get('data_dir'), 'filestore', odoo_cfg.get('database'))
+        utils.compress_files('test_backup', [dump_name, (attachments_folder, 'filestore')])
+    else:
+        utils.compress_files('test_backup', [dump_name])
     print dump_name
     #utils.pase_odoo_configfile('config.conf')
 

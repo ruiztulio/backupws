@@ -12,6 +12,8 @@ import subprocess
 import spur
 import shlex
 import collections
+from docker import Client
+import docker.errors
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -355,3 +357,53 @@ def pgdump_database(dest_folder, database_config):
         logger.error('Could not dump database, error message: %s', e.stderr_output)
         return None
     return dump_name
+
+def parse_docker_config(container_name, docker_url="unix://var/run/docker.sock"):
+    """Parse env vars from a container to get the nedded parameters to dump the database
+
+    Args:
+        container_name: container name or id to be used for the vars extraction
+    Returns:
+        dict with the needed configuration parameter"""
+
+    cli = Client(base_url=docker_url)
+    containers = cli.containers(all=True)
+    try:
+        inspected = cli.inspect_container(container_name)
+    except docker.errors.APIError as error:
+        if "no such id" not in error.explanation:
+            logger.error("No such container: %s", container_name)
+        else:
+            logger.error(error.explanation)
+        return None
+    env_vars = inspected.get('Config').get('Env')
+    res = {
+        'db_host' : 'localhost',
+        'db_port' : 5432,
+        'db_user' : 'odoo',
+        'db_password' : '',
+    }
+    for var in env_vars:
+        logger.debug('Env var from %s: %s is %s', container_name, var.split('=')[0], var.split('=')[1])
+        if var.startswith('DB_PASSWORD='):
+            res.update({'db_password': var.split('=')[1]})
+        elif var.startswith('DB_USER='):
+            res.update({'db_user': var.split('=')[1]})
+        elif var.startswith('DB_HOST='):
+            ip = var.split('=')[1]
+            if '172.17.42.1' == ip:
+                ip = '127.0.0.1'
+            res.update({'db_host': ip})
+        elif var.startswith('DB_PORT='):
+            res.update({'db_port': var.split('=')[1]})
+    volumes = inspected.get('Config').get('Volumes')
+    for mnt, volume in volumes.iteritems():
+        if '.local/share/Odoo' in mnt and volume:
+            res.update({'data_dir': volume})
+            break
+    else:
+        logger.error('Datadir not found, wont be able to backup attachments')
+
+    if not res.get('data_dir'):
+        logger.error('The attachments dicrectory was not mounted from the host, wont be able to backup attachments')
+    return res
