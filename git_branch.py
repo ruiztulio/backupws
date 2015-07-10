@@ -3,6 +3,7 @@ from git import Repo
 import logging
 
 from lib.utils import name_from_url
+from lib.utils import clean_files
 
 
 class GitBranch(object):
@@ -80,6 +81,13 @@ class GitBranch(object):
                               os.path.join(path, branch['path']))
             try:
                 repo = self.__clone(path, branch)
+                current_commit = str(repo.active_branch.commit)
+                if branch['commit'] != current_commit:
+                    clean_files([os.path.join(path, branch['path'])])
+                    branch.update({'depth': False})
+                    repo = self.__clone(path, branch)
+                    self.__reset(os.path.join(path, branch['path']),
+                                 branch['commit'])
                 self.logger.info("Branch %s cloned", branch['path'])
                 res.append(branch['name'])
             except Exception as e:
