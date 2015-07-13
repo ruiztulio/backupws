@@ -41,6 +41,11 @@ tmp = args.temp_dir
 
 
 def get_date(db_file):
+    """This function takes the creation date of a backup file, from its name
+
+    :param db_file: Backup file
+    :return: Backup date if succesfull. '0001-01-01 00:00:00' otherwise
+    """
     date_str = os.path.basename(db_file).split(".")[0]
     str_list = date_str.split("-")
     str_list = str_list[len(str_list) - 1].split("_")
@@ -117,6 +122,11 @@ def create_test_db(prefix, db_file, db_config, temp_dir):
 
 
 def select_file(path):
+    """This function selects the most recent backup file in 'path' dir
+
+    :param path: Backup path directory
+    :return: Most recent db_file
+    """
     logger.debug("Selecting backup file to be restored")
     db_select = os.listdir(path)[0]
     for dfile in os.listdir(path):
