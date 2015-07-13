@@ -37,18 +37,18 @@ tmp = args.temp_dir
 
 
 def restore_database(db_name, db_config, dump_dest, port):
-	"""This function restores and deactivates a database from a dump
-	
-	:param db_name: Database name
-	:param db_config: Dict with database configuration
-	:param dump_dest: Dump to be used
-	:param port: Config Port from db_config used for connection
-	:return: 1 if connection failed, 2 if database exists, db_name if
-	         succesfull
-	"""
-	if not utils.test_connection(db_name, db_config['host'],
-	                             db_config['port'][port],db_config['user'],
-	                             db_config['pswd'],only_connection=True):
+    """This function restores and deactivates a database from a dump
+
+    :param db_name: Database name
+    :param db_config: Dict with database configuration
+    :param dump_dest: Dump to be used
+    :param port: Config Port from db_config used for connection
+    :return: 1 if connection failed, 2 if database exists, db_name if
+            succesfull
+    """
+    if not utils.test_connection(db_name, db_config['host'],
+                                 db_config['port'][port], db_config['user'],
+                                 db_config['pswd'], only_connection=True):
         return 1
     if utils.database_exists(db_name, db_config['host'],
                              db_config['port'][port]):
@@ -64,10 +64,9 @@ def restore_database(db_name, db_config, dump_dest, port):
                    db_config['host'], db_config['port'][port])
         logger.debug("Database deactivated")
     except Exception as e:
-		logger.error(e)
-		return 1
+        logger.error(e)
+        return 1
     return db_name
-
 
 def create_test_db(prefix, db_file, db_config, temp_dir):
     """
@@ -85,7 +84,7 @@ def create_test_db(prefix, db_file, db_config, temp_dir):
     dump_dest = utils.decompress_files(db_file, temp_dir)
     result = restore_database(db_name, db_config, dump_dest, "xmlrpc")
     if result == 1:
-		result = restore_database(db_name, db_config, dump_dest, "opt")
+        result = restore_database(db_name, db_config, dump_dest, "opt")
     utils.clean_files([dump_dest])
     return result
 
