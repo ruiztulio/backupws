@@ -16,7 +16,8 @@ parser = argparse.ArgumentParser()
 action = parser.add_mutually_exclusive_group(required=True)
 action.add_argument("-f", "--backup-file", help="Path of backup file")
 action.add_argument("-p", "--backup-path",
-                    help="Path of backup dir. Most recent backup will be restored")
+                    help="Path of backup dir. Most recent backup will be used")
+action.add_argument("-d", "--database", help="Database to be used")
 parser.add_argument("--log-level", help="Level of logger. INFO as default",
                     default="info")
 parser.add_argument("--logfile", help="File where log will be saved",
@@ -38,6 +39,7 @@ path = args.backup_path
 json_file = args.config_file
 config = args.config
 tmp = args.temp_dir
+database = args.database
 
 
 def get_date(db_file):
@@ -101,8 +103,7 @@ def restore_database(db_name, db_config, dump_dest, port):
 
 
 def create_test_db(prefix, db_file, db_config, temp_dir):
-    """
-    This function creates a database from backup file with determined config
+    """This function creates a test database from backup file with determined config
 
     :param prefix: Prefix for database name
     :param db_file: Backup file for database
@@ -121,6 +122,31 @@ def create_test_db(prefix, db_file, db_config, temp_dir):
     return result
 
 
+def copy_database(prefix, database, db_config, temp_dir):
+    """This function creates a test database from an active database
+    with determined config
+
+    :param prefix: Prefix for database name
+    :param database: database to be copied
+    :param db_config: Dict with database configuration
+    :param temp_dir: Temporary directory for dump
+    :return: Database name if succesfull, 1 otherwise
+    """
+    db_name = '%s_%s_%s'% \
+              (prefix, database, datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
+    try:
+        dbase = utils.dump_database(temp_dir, database, db_config['superpswd'],
+                                    db_config['host'], db_config['port']['xmlrpc'])
+    except:
+        dbase = utils.dump_database(temp_dir, database, db_config['superpswd'],
+                                    db_config['host'], db_config['port']['opt'])
+    result = restore_database(db_name, db_config, dbase, "xmlrpc")
+    if result == 1:
+        result = restore_database(db_name, db_config, dbase, "opt")
+    utils.clean_files([dbase])
+    return result
+
+
 def select_file(path):
     """This function selects the most recent backup file in 'path' dir
 
@@ -135,11 +161,19 @@ def select_file(path):
     logger.info("File %s selected", os.path.basename(db_select))
     return db_select
 
+
 if __name__ == '__main__':
-    if not db_file:
-        db_file = select_file(path)
-    logger.info("Creating %s database from %s backup", config, db_file)
     db_config = utils.load_json(json_file)
-    db = create_test_db(config, db_file, db_config[config], tmp)
+    if db_file:
+        logger.info("Creating %s database from %s backup", config, db_file)
+        db = create_test_db(config, db_file, db_config[config], tmp)    
+    if path:
+        db_file = select_file(path)
+        logger.info("Creating %s database from %s backup", config, db_file)
+        db = create_test_db(config, db_file, db_config[config], tmp)
+    if database:
+        logger.info("Creating %s database from %s active database", config,
+                    database)
+        db = copy_database(config, database, db_config[config], tmp) 
     if db != 1:
         logger.info("Database %s created", db)
