@@ -25,6 +25,9 @@ parser.add_argument("--logfile", help="File where log will be saved",
 parser.add_argument("--config-file", help="Json file with possible config",
                     default="config-bd.json")
 parser.add_argument("--config", help="Database config", required=True)
+parser.add_argument("--active-config-file",
+                    help="Active database config file. Same as test database by default",
+                    default=False)
 parser.add_argument("--temp-dir", help="Temp working dir", default="/tmp")
 
 args = parser.parse_args()
@@ -37,6 +40,7 @@ logger = logging.getLogger("testbd_creator")
 db_file = args.backup_file
 path = args.backup_path
 json_file = args.config_file
+active_json_file = args.active_config_file
 config = args.config
 tmp = args.temp_dir
 database = args.database
@@ -122,7 +126,7 @@ def create_test_db(prefix, db_file, db_config, temp_dir):
     return result
 
 
-def copy_database(prefix, database, db_config, temp_dir):
+def copy_database(prefix, database, db_config, temp_dir, active_config):
     """This function creates a test database from an active database
     with determined config
 
@@ -133,13 +137,18 @@ def copy_database(prefix, database, db_config, temp_dir):
     :return: Database name if succesfull, 1 otherwise
     """
     db_name = '%s_%s_%s'% \
-              (prefix, database, datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
+              (prefix, database,
+               datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
     try:
-        dbase = utils.dump_database(temp_dir, database, db_config['superpswd'],
-                                    db_config['host'], db_config['port']['xmlrpc'])
+        dbase = utils.dump_database(temp_dir, database,
+                                    active_config['superpswd'],
+                                    active_config['host'],
+                                    active_config['port']['xmlrpc'])
     except:
-        dbase = utils.dump_database(temp_dir, database, db_config['superpswd'],
-                                    db_config['host'], db_config['port']['opt'])
+        dbase = utils.dump_database(temp_dir, database,
+                                    active_config['superpswd'],
+                                    active_config['host'],
+                                    active_config['port']['opt'])
     result = restore_database(db_name, db_config, dbase, "xmlrpc")
     if result == 1:
         result = restore_database(db_name, db_config, dbase, "opt")
@@ -166,7 +175,7 @@ if __name__ == '__main__':
     db_config = utils.load_json(json_file)
     if db_file:
         logger.info("Creating %s database from %s backup", config, db_file)
-        db = create_test_db(config, db_file, db_config[config], tmp)    
+        db = create_test_db(config, db_file, db_config[config], tmp)
     if path:
         db_file = select_file(path)
         logger.info("Creating %s database from %s backup", config, db_file)
@@ -174,6 +183,11 @@ if __name__ == '__main__':
     if database:
         logger.info("Creating %s database from %s active database", config,
                     database)
-        db = copy_database(config, database, db_config[config], tmp) 
+        if active_json_file:
+            db_active_config = utils.load_json(active_json_file)
+        else:
+            db_active_config = db_config
+        db = copy_database(config, database, db_config[config], tmp,
+                           db_active_config)
     if db != 1:
         logger.info("Database %s created", db)
