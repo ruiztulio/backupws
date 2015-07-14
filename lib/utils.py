@@ -188,6 +188,19 @@ def dump_database(dest_folder, database_name, super_user_pass, host, port):
         fout.write(binary_data)
     return dump_name
 
+def generate_backup_name(database_name, reason=False):
+    """Generates the backup name accordint to the following standar:
+       database_name_reason_YYYYmmdd_HHMMSS
+
+       If reason is none:
+       database_name_YYYYmmdd_HHMMSS
+    """
+    if reason:
+        res = '%s_%s_%s'% \
+                    (database_name, reason, datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
+    else:
+        res = '%s_%s'%(database_name, datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
+    return res
 
 def backup_database(database_name, dest_folder, user, password, host, port, reason=False, tmp_dir=False):
     """ Receive database name and back it up
@@ -207,11 +220,7 @@ def backup_database(database_name, dest_folder, user, password, host, port, reas
         Full path to the backup
     """
     files = []
-    if reason:
-        file_name = '%s_%s_%s'% \
-                    (database_name, reason, datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
-    else:
-        file_name = '%s_%s'%(database_name, datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
+    file_name = generate_backup_name(database_name, reason)
     logger.info("Dumping database")
     dbase = dump_database(tmp_dir, database_name, password, host, port)
     files.append(os.path.join(tmp_dir, dbase))
