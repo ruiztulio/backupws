@@ -45,11 +45,12 @@ def main(main_args):
         odoo_cfg =  utils.parse_docker_config(args.from_docker)
     odoo_cfg.update({'database': args.database})
     dump_name = utils.pgdump_database('/tmp', odoo_cfg)
+    bkp_name = utils.generate_backup_name(args.database, args.reason)
     if odoo_cfg.get('data_dir'):
         attachments_folder = os.path.join(odoo_cfg.get('data_dir'), 'filestore', odoo_cfg.get('database'))
-        utils.compress_files('test_backup', [dump_name, (attachments_folder, 'filestore')])
+        utils.compress_files(bkp_name, [dump_name, (attachments_folder, 'filestore')])
     else:
-        utils.compress_files('test_backup', [dump_name])
+        utils.compress_files(bkp_name, [dump_name])
     print dump_name
     #utils.pase_odoo_configfile('config.conf')
 
