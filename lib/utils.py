@@ -396,7 +396,7 @@ def parse_docker_config(container_name, docker_url="unix://var/run/docker.sock")
             res.update({'db_host': ip})
         elif var.startswith('DB_PORT='):
             res.update({'db_port': var.split('=')[1]})
-    volumes = inspected.get('Config').get('Volumes')
+    volumes = inspected.get('Volumes')
     for mnt, volume in volumes.iteritems():
         if '.local/share/Odoo' in mnt and volume:
             res.update({'data_dir': volume})
