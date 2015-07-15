@@ -1,3 +1,5 @@
+"""This module contains a class that manipulate git repositories
+"""
 import os
 from git import Repo
 import logging
@@ -7,7 +9,19 @@ from lib.utils import clean_files
 
 
 class GitBranch(object):
-
+    """This class provides manipulation of git repositories using
+    lists of config dictionaries. Each dictionary contains the following
+    information of a git branch:
+        path: Path of branch location, usually relative to a common
+              origin
+        name: Name of repository
+        branch: Branch to be used
+        commit: Hash of the commit pointed by HEAD
+        is_dirty: Status of the branch
+        depth: Depth of the cloned branch. False by default.
+        type: Always 'git'.
+        repo_url: Urls of remote origins of the repository
+    """
     def __init__(self):
         self.__info = None
         logging.basicConfig(
@@ -16,6 +30,11 @@ class GitBranch(object):
         self.logger = logging.getLogger('git_branches')
 
     def __get_branch(self, path):
+        """Gets required information of a repository
+
+        :param path: Path of .git directory
+        :return: Config dictionary
+        """
         info = {}
         try:
             repo = Repo(path)
@@ -37,6 +56,10 @@ class GitBranch(object):
         return info
 
     def update_info(self, path):
+        """Updates information of the repositories' list
+
+        :param path: Common path that contains the repositories
+        """
         res = []
         for each in self.__info:
             path_dir = os.path.join(path, each['path'])
@@ -47,6 +70,12 @@ class GitBranch(object):
         self.__info = res
 
     def get_branches(self, path):
+        """Gets information of all existing repositories in a
+        directory
+
+        :param path: Common path that contains the repositories
+        :return: List of config dictionaries
+        """
         res = []
         for lFile in os.listdir(path):
             p = os.path.join(path, lFile)
@@ -65,6 +94,11 @@ class GitBranch(object):
         return self.__info
 
     def __clone(self, path, branch):
+        """Clones a repository in the specified path
+
+        :param path: Path where will be cloned the repository
+        :param branch: Config dict of the repository
+        """
         depth = branch.get('depth', False)
         url = branch['repo_url'].get('origin', branch['repo_url'].values()[0])
         repo = Repo.clone_from(url, os.path.join(path, branch['path']),
@@ -72,6 +106,12 @@ class GitBranch(object):
         return repo
 
     def set_branches(self, path):
+        """Clones a list of repositories in the specified path with
+        the specified configuration
+
+        :param path: Path where will be cloned the repositories
+        :return: List of config dictionaries
+        """
         res = []
         for branch in self.__info:
             url = branch['repo_url'].get('origin',
@@ -98,10 +138,22 @@ class GitBranch(object):
         return res
 
     def __update(self, path, branch):
+        """Pulls in the repo the new information from the origin url
+
+        :param path: Path of the repository to be pulled
+        :param branch: Config dict of the repository
+        """
         repo = Repo(path)
         repo.remotes[0].pull(branch)
 
     def update_branches(self, path, branches):
+        """Pulls in the new information of a list of repositories, from
+        their origin urls
+
+        :param path: Common path of the repositories
+        :param branches: List of repositories to be pulled
+        :return: List of repositories succesfully pulled
+        """
         branches_updated = []
         for branch in self.__info:
             if branch['name'] in branches:
@@ -119,10 +171,21 @@ class GitBranch(object):
         return branches_updated
 
     def __reset(self, path, commit):
+        """Resets a branch to the specified commit
+
+        :param path: Path of the repository
+        :param commit: Commit to be pointed
+        """
         repo = Repo(path)
         repo.git.reset(commit, "--hard")
 
     def reset_branches(self, path, branches):
+        """Resets a list of branches to the specified commits
+
+        :param path: Common path of the repositories
+        :param branches: List of branches to be reset
+        :return: List of branches succesfully reset
+        """
         branches_reset = []
         for branch in self.__info:
             if branch['name'] in branches:
@@ -139,6 +202,11 @@ class GitBranch(object):
         return branches_reset
 
     def set_info(self, info):
+        """Loads list of config dictionaries of 'git' repositories
+
+        :param info: List of config dictionaries to be loaded
+        :return: List of config dictionaries
+        """
         self.__info = []
         for branch in info:
             if branch['type'] == "git":
@@ -146,4 +214,8 @@ class GitBranch(object):
         return self.__info
 
     def get_info(self):
+        """Gives the information of the list of config dictionaries
+
+        :return: List of config dictionaries
+        """
         return self.__info
