@@ -86,8 +86,11 @@ class GitBranch(object):
                     clean_files([os.path.join(path, branch['path'])])
                     branch.update({'depth': False})
                     repo = self.__clone(path, branch)
-                    self.__reset(os.path.join(path, branch['path']),
-                                 branch['commit'])
+                    try:
+                        self.__reset(os.path.join(path, branch['path']),
+                                     branch['commit'])
+                    except Exception as e:
+                        self.logger.error(e)
                 self.logger.info("Branch %s cloned", branch['path'])
                 res.append(branch['name'])
             except Exception as e:
