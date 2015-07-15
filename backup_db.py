@@ -13,17 +13,21 @@ logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('backup')
 
+
 def main(main_args):
     """ Main function
     """
     parser = configargparse.ArgParser()
     parser.add("-d", "--database", help="Database name to backup",
         default=False)
-    parser.add('-o', '--odoo_configfile', 
-        help='Config file path (mutually exclusive with -f option)', default=False)
-    parser.add('-f', '--from_docker', 
-        help='Docker container which has the configuration (mutually exclusive with -o option)', default=False)
-    parser.add('-c', '--config_file', 
+    action = parser.add_mutually_exclusive_group(required=True)
+    action.add('-o', '--odoo_configfile',
+        help='Config file path (mutually exclusive with -f option)',
+        default=False)
+    action.add('-f', '--from_docker',
+        help='Docker container which has the configuration (mutually exclusive with -o option)',
+        default=False)
+    parser.add('-c', '--config_file',
         help='Config file path', is_config_file=True)
     parser.add("-t", "--temp_dir", help="Temp working dir",
         default="/tmp")
@@ -34,11 +38,6 @@ def main(main_args):
         default=False)
 
     args = parser.parse_args(main_args)
-    if (args.from_docker and args.odoo_configfile) or \
-        (not args.from_docker and not args.odoo_configfile):
-        print "You must specify one of two options -o or -f\n\n"
-        print(parser.format_help())
-        return 1
     if args.odoo_configfile:
         odoo_cfg = utils.pase_odoo_configfile(args.odoo_configfile)
     elif args.from_docker:
