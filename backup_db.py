@@ -8,6 +8,8 @@ import configargparse
 import sys
 from lib import utils
 import os
+from tempfile import gettempdir
+
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -26,7 +28,7 @@ def main(main_args):
     parser.add('-c', '--config_file', 
         help='Config file path', is_config_file=True)
     parser.add("-t", "--temp_dir", help="Temp working dir",
-        default="/tmp")
+        default=gettempdir())
     parser.add("-b", "--backup_dir", help="Where to store backups",
         default=".")
     parser.add("-r", "--reason",
