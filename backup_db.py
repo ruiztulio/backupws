@@ -44,7 +44,7 @@ def main(main_args):
     elif args.from_docker:
         odoo_cfg =  utils.parse_docker_config(args.from_docker)
     odoo_cfg.update({'database': args.database})
-    dump_name = utils.pgdump_database('/tmp', odoo_cfg)
+    dump_name = utils.pgdump_database(args.temp_dir, odoo_cfg)
     bkp_name = utils.generate_backup_name(args.database, args.reason)
     if odoo_cfg.get('data_dir'):
         attachments_folder = os.path.join(odoo_cfg.get('data_dir'), 'filestore', odoo_cfg.get('database'))
