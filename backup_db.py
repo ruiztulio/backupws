@@ -59,7 +59,6 @@ def main(main_args):
     else:
         logger.info('There is not attachements folder to backup')
     utils.compress_files(bkp_name, files2backup)
-    print dump_name
     #utils.pase_odoo_configfile('config.conf')
 
 
