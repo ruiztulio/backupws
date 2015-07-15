@@ -202,7 +202,7 @@ def generate_backup_name(database_name, reason=False):
         res = '%s_%s'%(database_name, datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
     return res
 
-def backup_database(database_name, dest_folder, user, password, host, port, reason=False, tmp_dir=False):
+def backup_database_ws(database_name, dest_folder, user, password, host, port, reason=False, tmp_dir=False):
     """ Receive database name and back it up
 
     Args:
@@ -238,7 +238,7 @@ def backup_databases(databases_list, dest_folder,
         databases_list (list): The database list name that will be 
     """
     for database in databases_list:
-        backup_database(database, dest_folder, user, password, host, port,
+        backup_database_ws(database, dest_folder, user, password, host, port,
                         reason, tmp_dir)
 
 
