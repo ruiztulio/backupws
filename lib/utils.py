@@ -58,10 +58,13 @@ def clean_files(files):
         files (list): A list of absolute or relatove paths thar will be erased
     """
     for fname in files:
-        if os.path.isfile(fname):
-            os.remove(fname)
-        elif os.path.isdir(fname):
-            shutil.rmtree(fname)
+        if fname != "/":
+            if os.path.isfile(fname):
+                os.remove(fname)
+            elif os.path.isdir(fname):
+                shutil.rmtree(fname)
+        else:
+            logger.error("Invalid target path: '/'. Are you trying to delete your root path?")
 
 
 def simplify_path(b_info):
