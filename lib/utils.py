@@ -154,9 +154,12 @@ def decompress_files(name, dest_folder):
     name_list = tar.getmembers()
     tar.close()
     bz2_file.close()
+    base_folder = None
     for fname in name_list:
-        if os.path.basename(fname.name) == 'database_dump.b64':
+        if os.path.basename(fname.name) == 'database_dump.b64' or \
+            os.path.basename(fname.name) == 'database_dump.sql':
             base_folder = os.path.dirname(fname.name)
+            break
 
     logger.debug("Destination folder: %s", dest_folder)
     logger.debug("Bakcup folder: %s", base_folder)
