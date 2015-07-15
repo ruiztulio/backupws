@@ -358,7 +358,6 @@ def pgdump_database(dest_folder, database_config):
     dump_name = os.path.join(dest_folder, 'database_dump.sql')
     os.environ['PGPASSWORD'] = database_config.get('db_password')
     dump_cmd = 'pg_dump {database} -O -f {0} -p {db_port} -h {db_host} -U {db_user}'.format(dump_name, **database_config)
-    print dump_cmd
     shell = spur.LocalShell()
     try:
         result = shell.run(shlex.split(dump_cmd))
