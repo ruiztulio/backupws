@@ -14,6 +14,8 @@ import shlex
 import collections
 from docker import Client
 import docker.errors
+from tempfile import gettempdir
+
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -64,7 +66,8 @@ def clean_files(files):
     Args:
         files (list): A list of absolute or relatove paths thar will be erased
     """
-    for fname in files:
+    for f in files:
+        fname = f[0] if hasattr(f, '__iter__') else f
         if os.path.isfile(fname):
             os.remove(fname)
         elif os.path.isdir(fname):
@@ -365,7 +368,10 @@ def pgdump_database(dest_folder, database_config):
     try:
         result = shell.run(shlex.split(dump_cmd))
     except spur.results.RunProcessError as e:
-        logger.error('Could not dump database, error message: %s', e.stderr_output)
+        if 'does not exist' in e.stderr_output:
+            logger.error('Database does not exists, check name and try again')
+        else:
+            logger.error('Could not dump database, error message: %s', e.stderr_output)
         return None
     return dump_name
 
@@ -434,12 +440,48 @@ def restore_filestore(src_folder, database_name, container_name, docker_url="uni
             odoo_config = i.split('=')[1] 
     res = cli.execute(container_name, "cat {}".format(odoo_config))
     for i in res.split('\n'):
-        print i
         if i.strip().startswith("data_dir"):
             data_dir = i.split("=")[1].strip()
             break
     fs_name = os.path.join(data_dir, "filestore", database_name)    
     cli.execute(container_name, "mv /tmp/filestore {}".format(fs_name))
+
+def backup_database_direct(odoo_config, dest_folder, reason=False, tmp_dir=False):
+    """ Receive database name and back it up
+
+    Args:
+        odoo_config (dict): Odoo config for the backup process
+        dest_folder (str): Folder where the backup will be stored
+        reason (str): Optional parameter that is used in case 
+                      there is a particular reason for the backup
+        tmp_dir (str): Optional parameter to store the temporary working dir, default is /tmp
+
+    Returns:
+        Full path to the backup
+    """
+    if not tmp_dir:
+        tmp_dir = gettempdir()
+    dump_name = pgdump_database(tmp_dir, odoo_config)
+    if not dump_name:
+        logger.error('Database could not be dumped')
+        return None
+    bkp_name = generate_backup_name(odoo_config.get('database'), reason)
+    files2backup = [dump_name]
+    if odoo_config.get('data_dir'):
+        attachments_folder = os.path.join(odoo_config.get('data_dir'), 'filestore', odoo_config.get('database'))
+        if os.path.exists(attachments_folder):
+            logger.debug('Attachements folder "%s"', attachments_folder)
+            files2backup.append((attachments_folder, 'filestore'))
+        else:
+            logger.warn('Folder "%s" does not exists, attachements are not being added to the backup', attachments_folder)
+    else:
+        logger.info('There is not attachements folder to backup')
+    logger.info('Compressing files')
+    logger.debug('Files : %s', str(files2backup))
+    full_name = compress_files(bkp_name, files2backup)
+    logger.info('Compressed backup, cleaning')
+    clean_files([dump_name])
+    return full_name
 
 def parse_docker_config(container_name, docker_url="unix://var/run/docker.sock"):
     """Parse env vars from a container to get the nedded parameters to dump the database

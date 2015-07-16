@@ -45,19 +45,7 @@ def main(main_args):
     elif args.from_docker:
         odoo_cfg =  utils.parse_docker_config(args.from_docker)
     odoo_cfg.update({'database': args.database})
-    dump_name = utils.pgdump_database(args.temp_dir, odoo_cfg)
-    bkp_name = utils.generate_backup_name(args.database, args.reason)
-    files2backup = [dump_name]
-    if odoo_cfg.get('data_dir'):
-        attachments_folder = os.path.join(odoo_cfg.get('data_dir'), 'filestore', odoo_cfg.get('database'))
-        if os.path.exists(attachments_folder):
-            logger.info('Attachements folder "%s"', attachments_folder)
-            files2backup.append((attachments_folder, 'filestore'))
-        else:
-            logger.warn('Folder "%s" does not exists, attachements are not being added to the backup', attachments_folder)
-    else:
-        logger.info('There is not attachements folder to backup')
-    utils.compress_files(bkp_name, files2backup)
+    utils.backup_database_direct(odoo_cfg, args.backup_dir)
     #utils.pase_odoo_configfile('config.conf')
 
 
