@@ -369,6 +369,78 @@ def pgdump_database(dest_folder, database_config):
         return None
     return dump_name
 
+def pgrestore_database(dump_name, database_config):
+    """ Restores a databse dump in sql plain format, tries to create database if not exists
+
+    Args:
+        dump_name (str): Full path and name of the sql dump to restore
+        database_config (dict): Database configuration parameters needed to execute restore
+    Returns:
+        None if could not restore databse, True otherwise
+    """
+    logger.debug("Creating database %s", database_config.get('database'))
+    os.environ['PGPASSWORD'] = database_config.get('db_password')
+    createdb_cmd = 'createdb {database} -T template1 -E utf8 -U {db_user} -p {db_port} -h {db_host}'.format(**database_config)
+    dropdb_cmd = 'dropdb {database} -U {db_user} -p {db_port} -h {db_host}'.format(**database_config)
+    restore_cmd = 'psql {database} -f {0} -p {db_port} -h {db_host} -U {db_user}'.format(dump_name, **database_config)
+
+    shell = spur.LocalShell()
+    try:
+        result = shell.run(shlex.split(createdb_cmd))
+    except spur.results.RunProcessError as e:
+        logger.error('Could not create database, error message: %s', e.stderr_output)
+        return None
+
+    try:
+        result = shell.run(shlex.split(restore_cmd))
+    except spur.results.RunProcessError as e:
+        logger.error('Could not restore database, error message: %s', e.stderr_output)
+        result = shell.run(shlex.split(dropdb_cmd))
+        return None
+    return True
+
+def restore_filestore(src_folder, database_name, container_name, docker_url="unix://var/run/docker.sock"):
+    """ Restore a filestore folder into a docker container that is already running
+        and has the /tmp folder mounted as a volume un the host
+
+    Args:
+        src_folder (str): Full path to the folder thar contains the filestore you want to restore
+        container_name (str): container name or id
+        docker_url (str): url to use in docker cli client
+    """
+    cli = Client(base_url=docker_url)
+    containers = cli.containers(all=True)
+    try:
+        inspected = cli.inspect_container(container_name)
+    except docker.errors.APIError as error:
+        if "no such id" not in error.explanation:
+            logger.error("No such container: %s", container_name)
+        else:
+            logger.error(error.explanation)
+        return None
+    volumes = inspected.get('Volumes')
+    for mnt, volume in volumes.iteritems():
+        if '/tmp' == mnt and volume:
+            dest_folder = volume
+            break
+    else:
+        logger.error("Could not restore filestore into %s container", container_name)
+        logger.error("You should run the docker with a volume in /tmp")
+        return None
+    shutil.move(src_folder, dest_folder)
+    env_vars = inspected.get('Config').get('Env')
+    for i in env_vars:
+        if i.startswith('ODOO_CONFIG_FILE='):
+            odoo_config = i.split('=')[1] 
+    res = cli.execute(container_name, "cat {}".format(odoo_config))
+    for i in res.split('\n'):
+        print i
+        if i.strip().startswith("data_dir"):
+            data_dir = i.split("=")[1].strip()
+            break
+    fs_name = os.path.join(data_dir, "filestore", database_name)    
+    cli.execute(container_name, "mv /tmp/filestore {}".format(fs_name))
+
 def parse_docker_config(container_name, docker_url="unix://var/run/docker.sock"):
     """Parse env vars from a container to get the nedded parameters to dump the database
 
