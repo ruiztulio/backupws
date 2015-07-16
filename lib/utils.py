@@ -347,7 +347,12 @@ def restore_direct(backup, odoo_config, working_dir, container_name):
         destination_file = os.path.join(dest_dir, 'backup.zip')
         decode_b64_file(os.path.join(dest_dir, 'database_dump.b64'), destination_file)
         zfile = zipfile.ZipFile(destination_file)
-        zfile.extractall(dest_dir)
+        logger.info('Unziping backup')
+        try:
+            zfile.extractall(dest_dir)
+        except IOError as e:
+            logger.error('Could not extract database_dump.b64: %s', e.message)
+            return None
         dump_name = os.path.join(dest_dir, 'dump.sql')
     pgrestore_database(dump_name, odoo_config)
     restore_filestore(filestore_folder, odoo_config.get('database'), container_name)
@@ -441,7 +446,7 @@ def restore_filestore(src_folder, database_name, container_name, docker_url="uni
         container_name (str): container name or id
         docker_url (str): url to use in docker cli client
     """
-    cli = Client(base_url=docker_url)
+    cli = Client(base_url=docker_url, timeout=3000)
     containers = cli.containers(all=True)
     try:
         inspected = cli.inspect_container(container_name)
@@ -451,6 +456,11 @@ def restore_filestore(src_folder, database_name, container_name, docker_url="uni
         else:
             logger.error(error.explanation)
         return None
+    ports = inspected.get('NetworkSettings').get('Ports')
+    if not ports:
+        logger.error('Container "%s" is not running', container_name)
+        return None
+
     volumes = inspected.get('Volumes')
     for mnt, volume in volumes.iteritems():
         if '/tmp' == mnt and volume:
