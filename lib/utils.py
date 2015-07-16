@@ -15,7 +15,9 @@ import collections
 from docker import Client
 import docker.errors
 from tempfile import gettempdir
-
+import base64
+import zipfile
+import sys
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -327,6 +329,30 @@ def test_connection(db_name, host=False, port=8069, user=False,
             logger.info("User '%s' could connect to the" + \
                         "instance properly with the supplied password", user)
     return True
+
+def decode_b64_file(src, dst):
+    with open(src, 'r') as source_file:
+        with open(dst, 'w') as destination_file:
+            for line in source_file:
+                destination_file.write(base64.b64decode(line))
+
+def restore_direct(backup, odoo_config, working_dir, container_name):
+    logger.info('Extracting files')
+    logger.debug('Extracting %s into %s', backup, working_dir)
+    dest_dir = decompress_files(backup, working_dir)
+    dump_name = os.path.join(dest_dir, 'database_dump.sql')
+    filestore_folder = os.path.join(dest_dir, 'filestore')
+    if os.path.exists(os.path.join(dest_dir, 'database_dump.b64')):
+        logger.debug('Is a backup generated with WS')
+        destination_file = os.path.join(dest_dir, 'backup.zip')
+        decode_b64_file(os.path.join(dest_dir, 'database_dump.b64'), destination_file)
+        zfile = zipfile.ZipFile(destination_file)
+        zfile.extractall(dest_dir)
+        dump_name = os.path.join(dest_dir, 'dump.sql')
+    pgrestore_database(dump_name, odoo_config)
+    restore_filestore(filestore_folder, odoo_config.get('database'), container_name)
+    return True
+
 
 def pase_odoo_configfile(filename):
     """Receive a odoo config file and parse it ti get the parameters needed to backup the database

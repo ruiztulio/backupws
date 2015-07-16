@@ -43,10 +43,7 @@ def main(main_args):
         odoo_cfg =  utils.parse_docker_config(args.from_docker)
     odoo_cfg.update({'database': args.database})
     working_dir = mkdtemp(prefix='vxRestore_', dir=args.temp_dir)
-    dest_dir = utils.decompress_files(args.backup, working_dir)
-    utils.pgrestore_database(os.path.join(dest_dir, 'database_dump.sql'), odoo_cfg)
-    utils.restore_filestore(os.path.join(dest_dir, 'filestore'), args.database, args.from_docker)
-
+    utils.restore_direct(args.backup, odoo_cfg, working_dir, args.from_docker)
 
 if __name__ == '__main__':
     logger.info("Starting backup process")
