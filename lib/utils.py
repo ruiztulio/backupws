@@ -66,7 +66,8 @@ def clean_files(files):
     Args:
         files (list): A list of absolute or relatove paths thar will be erased
     """
-    for f in files:
+    items = files if hasattr(files, '__iter__') else [files]
+    for f in items:
         fname = f[0] if hasattr(f, '__iter__') else f
         if os.path.isfile(fname):
             os.remove(fname)
@@ -480,7 +481,7 @@ def backup_database_direct(odoo_config, dest_folder, reason=False, tmp_dir=False
     logger.debug('Files : %s', str(files2backup))
     full_name = compress_files(bkp_name, files2backup)
     logger.info('Compressed backup, cleaning')
-    clean_files([dump_name])
+    clean_files(dump_name)
     return full_name
 
 def parse_docker_config(container_name, docker_url="unix://var/run/docker.sock"):
