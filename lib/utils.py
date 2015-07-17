@@ -437,6 +437,32 @@ def pgrestore_database(dump_name, database_config):
         return None
     return True
 
+def get_docker_env(container_name, docker_url="unix://var/run/docker.sock"):
+    """ Get env vars from a docker container
+    Args:
+        container_name (str): container name or id
+        docker_url (str): url to use in docker cli client
+    Return:
+        dict with var name as key and value
+    """
+    res = {}
+    cli = Client(base_url=docker_url)
+    containers = cli.containers(all=True)
+    try:
+        inspected = cli.inspect_container(container_name)
+    except docker.errors.APIError as error:
+        if "no such id" not in error.explanation:
+            logger.error("No such container: %s", container_name)
+        else:
+            logger.error(error.explanation)
+        return None
+    env_vars = inspected.get('Config').get('Env')
+    for var in env_vars:
+        name, value = var.split('=')
+        res.update({name: value})
+
+    return res
+
 def restore_filestore(src_folder, database_name, container_name, docker_url="unix://var/run/docker.sock"):
     """ Restore a filestore folder into a docker container that is already running
         and has the /tmp folder mounted as a volume un the host
@@ -471,10 +497,8 @@ def restore_filestore(src_folder, database_name, container_name, docker_url="uni
         logger.error("You should run the docker with a volume in /tmp")
         return None
     shutil.move(src_folder, dest_folder)
-    env_vars = inspected.get('Config').get('Env')
-    for i in env_vars:
-        if i.startswith('ODOO_CONFIG_FILE='):
-            odoo_config = i.split('=')[1] 
+    env_vars = get_docker_env(container_name)
+    odoo_config = env_vars.get('ODOO_CONFIG_FILE')
     res = cli.execute(container_name, "cat {}".format(odoo_config))
     for i in res.split('\n'):
         if i.strip().startswith("data_dir"):
@@ -528,6 +552,18 @@ def parse_docker_config(container_name, docker_url="unix://var/run/docker.sock")
     Returns:
         dict with the needed configuration parameter"""
 
+    env_vars = get_docker_env(container_name)
+    res = {
+        'db_host' : env_vars.get('DB_HOST', None),
+        'db_port' : env_vars.get('DB_PORT', 5432),
+        'db_user' : env_vars.get('DB_USER', 'odoo'),
+        'db_password' : env_vars.get('DB_PASSWORD'),
+    }
+
+    if '172.17.42.1' == res.get('db_host'):
+        res.update({'db_host': '127.0.0.1'})
+
+
     cli = Client(base_url=docker_url)
     containers = cli.containers(all=True)
     try:
@@ -538,26 +574,7 @@ def parse_docker_config(container_name, docker_url="unix://var/run/docker.sock")
         else:
             logger.error(error.explanation)
         return None
-    env_vars = inspected.get('Config').get('Env')
-    res = {
-        'db_host' : 'localhost',
-        'db_port' : 5432,
-        'db_user' : 'odoo',
-        'db_password' : '',
-    }
-    for var in env_vars:
-        logger.debug('Env var from %s: %s is %s', container_name, var.split('=')[0], var.split('=')[1])
-        if var.startswith('DB_PASSWORD='):
-            res.update({'db_password': var.split('=')[1]})
-        elif var.startswith('DB_USER='):
-            res.update({'db_user': var.split('=')[1]})
-        elif var.startswith('DB_HOST='):
-            ip = var.split('=')[1]
-            if '172.17.42.1' == ip:
-                ip = '127.0.0.1'
-            res.update({'db_host': ip})
-        elif var.startswith('DB_PORT='):
-            res.update({'db_port': var.split('=')[1]})
+                
     volumes = inspected.get('Volumes')
     for mnt, volume in volumes.iteritems():
         if '.local/share/Odoo' in mnt and volume:
