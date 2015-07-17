@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 
-import argparse
+import configargparse
 import psycopg2
 import getpass
 import logging
@@ -9,14 +9,14 @@ import uuid
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-parser = argparse.ArgumentParser()
-parser.add_argument("db", help="Database name")
-parser.add_argument("-U", "--username", help="Database username", default=False)
-parser.add_argument("-W", "--password", help="User password", default=False)
-parser.add_argument("-H", "--host", help="Database server host or socket", default=False)
-parser.add_argument("-p", "--port", help="Database server port", default=False)
-parser.add_argument("-r", "--rpass", help="Generate random passwords for users", default=False)
-parser.add_argument("-a", "--actions", help="""Comma separated actions to execute (deactivates)
+parser = configargparse.ArgParser()
+parser.add("-d", "--database", help="Database name")
+parser.add("-U", "--username", help="Database username", default=False)
+parser.add("-W", "--password", help="User password", default=False)
+parser.add("-H", "--host", help="Database server host or socket", default=False)
+parser.add("-p", "--port", help="Database server port", default=False)
+parser.add("-r", "--rpass", help="Generate random passwords for users", default=False)
+parser.add("-a", "--actions", help="""Comma separated actions to execute (deactivates)
                                                 possibles actions: partner, mail, pac, cron, rpass""", default=False)
 
 
@@ -33,7 +33,7 @@ sqls = {
 }
 
 str_conn = '''dbname=%s''' % \
-            (args.db)
+            (args.database)
 
 if args.actions:
     actions = [x.strip() for x in args.actions.split(',')]
