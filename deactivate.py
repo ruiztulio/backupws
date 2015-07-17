@@ -5,6 +5,7 @@ import psycopg2
 import getpass
 import logging
 import uuid
+from lib import utils
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -17,8 +18,10 @@ parser.add("-H", "--host", help="Database server host or socket", default=False)
 parser.add("-p", "--port", help="Database server port", default=False)
 parser.add("-r", "--rpass", help="Generate random passwords for users", default=False)
 parser.add("-a", "--actions", help="""Comma separated actions to execute (deactivates)
-                                                possibles actions: partner, mail, pac, cron, rpass""", default=False)
-
+                                    possibles actions: partner, mail, pac, cron, rpass""", 
+    default=False)
+parser.add("-f", "--from_docker", help="Docker container which has the database configuration", 
+    default=False)
 
 args = parser.parse_args()
 
@@ -40,14 +43,19 @@ if args.actions:
 else:
     actions = sqls.keys()
 
-if args.password:
-    str_conn = '%s password=%s'%(str_conn, args.password)
-if args.username:
-    str_conn = '%s user=%s'%(str_conn, args.username)
-if args.host:
-    str_conn = '%s host=%s'%(str_conn, args.host)
-if args.port:
-    str_conn = '%s port=%s'%(str_conn, args.port)
+if args.from_docker:
+    config = utils.parse_docker_config(args.from_docker)
+    str_conn = '{0} password={db_password} user={db_user} host={db_host} port={db_port}' \
+        .format(str_conn, **config)
+else:
+    if args.password:
+        str_conn = '%s password=%s'%(str_conn, args.password)
+    if args.username:
+        str_conn = '%s user=%s'%(str_conn, args.username)
+    if args.host:
+        str_conn = '%s host=%s'%(str_conn, args.host)
+    if args.port:
+        str_conn = '%s port=%s'%(str_conn, args.port)
 
 logger.info('Estableciendo conexion con el servidor postgres')
 try:
