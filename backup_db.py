@@ -21,7 +21,7 @@ def main(main_args):
     """
     parser = configargparse.ArgParser()
     parser.add("-d", "--database", help="Database name to backup",
-        default=False)
+        default=False, required=True)
     action = parser.add_mutually_exclusive_group(required=True)
     action.add('-o', '--odoo_configfile',
         help='Config file path (mutually exclusive with -f option)',

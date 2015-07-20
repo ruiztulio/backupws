@@ -19,7 +19,7 @@ def main(main_args):
     """
     parser = configargparse.ArgParser()
     parser.add("-d", "--database", help="Database name to retore the backup",
-        default=False)
+        default=False, required=True)
     parser.add('-o', '--odoo_configfile', 
         help='Config file path (mutually exclusive with -f option)', default=False)
     parser.add('-f', '--from_docker', 
@@ -29,7 +29,7 @@ def main(main_args):
     parser.add("-t", "--temp_dir", help="Temp working dir",
         default=gettempdir())
     parser.add("-b", "--backup", help="Backup file to be restored",
-        default=".")
+        default=False, required=True)
 
     args = parser.parse_args(main_args)
     if (args.from_docker and args.odoo_configfile) or \
