@@ -378,7 +378,7 @@ def pase_odoo_configfile(filename):
     except IOError:
         logger.error('configuration file "%s" not found',  filename)
         return None
-    res.update({'db_host' : config.get('options', 'db_host')})
+    res.update({'db_host' : config.get('options', 'db_host') if config.get('options', 'db_host') != 'False' else 'localhost'})
     res.update({'db_port' : config.get('options', 'db_port') if config.get('options', 'db_port') != 'False' else 5432})
     res.update({'db_user' : config.get('options', 'db_user')})
     res.update({'db_password' : config.get('options', 'db_password')})
@@ -420,7 +420,8 @@ def pgrestore_database(dump_name, database_config):
         None if could not restore databse, True otherwise
     """
     logger.debug("Creating database %s", database_config.get('database'))
-    os.environ['PGPASSWORD'] = database_config.get('db_password')
+    if database_config.get('db_password') != 'False':
+        os.environ['PGPASSWORD'] = database_config.get('db_password')
     createdb_cmd = 'createdb {database} -T template1 -E utf8 -U {db_user} -p {db_port} -h {db_host}'.format(**database_config)
     dropdb_cmd = 'dropdb {database} -U {db_user} -p {db_port} -h {db_host}'.format(**database_config)
     restore_cmd = 'psql {database} -f {0} -p {db_port} -h {db_host} -U {db_user}'.format(dump_name, **database_config)
