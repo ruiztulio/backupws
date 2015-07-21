@@ -49,7 +49,7 @@ def main(main_args):
     working_dir = mkdtemp(prefix='vxRestore_', dir=args.temp_dir)
     if utils.dropdb_direct(odoo_cfg):
         utils.remove_attachments(odoo_cfg)
-        utils.restore_direct(args.backup, odoo_cfg, working_dir, args.from_docker)
+        utils.restore_direct(args.backup, odoo_cfg, working_dir)
 
 if __name__ == '__main__':
     logger.info("Starting backup process")
