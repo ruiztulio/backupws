@@ -666,7 +666,7 @@ def remove_attachments(odoo_config):
                 data_dir = i.split("=")[1].strip()
                 break
         fs_name = os.path.join(data_dir, "filestore", odoo_config.get('database'))
-        cli.execute(container, "rm -r {}".format(fs_name))
+        cli.execute(odoo_config.get('odoo_container'), "rm -r {}".format(fs_name))
     else:
         fs_name = os.path.join(odoo_config.get('data_dir'),
                                'filestore',
