@@ -43,7 +43,7 @@ def main(main_args):
     if args.odoo_configfile:
         odoo_cfg = utils.pase_odoo_configfile(args.odoo_configfile)
     elif args.from_docker:
-        odoo_cfg =  utils.parse_docker_config(args.from_docker)
+        odoo_cfg = utils.parse_docker_config(args.from_docker)
     odoo_cfg.update({'database': args.database})
     utils.backup_database_direct(odoo_cfg, args.backup_dir)
     #utils.pase_odoo_configfile('config.conf')

@@ -383,6 +383,7 @@ def pase_odoo_configfile(filename):
     res.update({'db_user' : config.get('options', 'db_user')})
     res.update({'db_password' : config.get('options', 'db_password')})
     res.update({'data_dir' : config.get('options', 'data_dir')})
+    res.update({'odoo_cfg_file': filename})
     
     return res
 
@@ -598,7 +599,9 @@ def parse_docker_config(container_name, docker_url="unix://var/run/docker.sock")
         logger.error('Datadir not found, wont be able to backup attachments')
 
     if not res.get('data_dir'):
-        logger.error('The attachments dicrectory was not mounted from the host, wont be able to backup attachments')
+        logger.error(('The attachments dicrectory was not mounted from the host,',
+                      'wont be able to backup attachments'))
+    res.upate({'odoo_container': container_name})
     return res
 
 def dropdb_direct(database_config):
