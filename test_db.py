@@ -5,6 +5,7 @@ backup files
 """
 
 import os
+import datetime
 import logging
 import argparse
 
@@ -12,8 +13,11 @@ from lib import utils
 from deactivate_ws import deactivate
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-f", "--backup-file", help="Path of backup file",
-                    required=True)
+action = parser.add_mutually_exclusive_group(required=True)
+action.add_argument("-f", "--backup-file", help="Path of backup file")
+action.add_argument("-p", "--backup-path",
+                    help="Path of backup dir. Most recent backup will be used")
+action.add_argument("-d", "--database", help="Database to be used")
 parser.add_argument("--log-level", help="Level of logger. INFO as default",
                     default="info")
 parser.add_argument("--logfile", help="File where log will be saved",
@@ -21,6 +25,9 @@ parser.add_argument("--logfile", help="File where log will be saved",
 parser.add_argument("--config-file", help="Json file with possible config",
                     default="config-bd.json")
 parser.add_argument("--config", help="Database config", required=True)
+parser.add_argument("--active-config-file",
+                    help="Active database config file. Same as test database by default",
+                    default=False)
 parser.add_argument("--temp-dir", help="Temp working dir", default="/tmp")
 
 args = parser.parse_args()
@@ -31,9 +38,39 @@ logging.basicConfig(level=level,
 logger = logging.getLogger("testbd_creator")
 
 db_file = args.backup_file
+path = args.backup_path
 json_file = args.config_file
+active_json_file = args.active_config_file
 config = args.config
 tmp = args.temp_dir
+database = args.database
+
+
+def get_date(db_file):
+    """This function takes the creation date of a backup file, from its name
+
+    :param db_file: Backup file
+    :return: Backup date if succesfull. '0001-01-01 00:00:00' otherwise
+    """
+    date_str = os.path.basename(db_file).split(".")[0]
+    str_list = date_str.split("-")
+    str_list = str_list[len(str_list) - 1].split("_")
+    date_str = str_list[len(str_list) - 2]
+    time_str = str_list[len(str_list) - 1]
+    try:
+        year = int(date_str[0:4])
+        month = int(date_str[4:6])
+        day = int(date_str[6:])
+        hour = int(time_str[0:2])
+        minute = int(time_str[2:4])
+        second = int(time_str[4:])
+        file_date = datetime.datetime(year=year, month=month, day=day,
+                                      hour=hour, minute=minute, second=second)
+    except Exception as e:
+        file_date = datetime.datetime(year=datetime.MINYEAR, month=1, day=1,
+                                      hour=0, minute=0, second=0)
+        logger.error("File: %s - %s", os.path.basename(db_file), e)
+    return file_date
 
 
 def restore_database(db_name, db_config, dump_dest, port):
@@ -47,8 +84,8 @@ def restore_database(db_name, db_config, dump_dest, port):
              succesfull
     """
     if not utils.test_connection(db_name, db_config['host'],
-                                 db_config['port'][port],db_config['user'],
-                                 db_config['pswd'],only_connection=True):
+                                 db_config['port'][port], db_config['user'],
+                                 db_config['pswd'], only_connection=True):
         return 1
     if utils.database_exists(db_name, db_config['host'],
                              db_config['port'][port]):
@@ -70,8 +107,7 @@ def restore_database(db_name, db_config, dump_dest, port):
 
 
 def create_test_db(prefix, db_file, db_config, temp_dir):
-    """
-    This function creates a database from backup file with determined config
+    """This function creates a test database from backup file with determined config
 
     :param prefix: Prefix for database name
     :param db_file: Backup file for database
@@ -90,9 +126,68 @@ def create_test_db(prefix, db_file, db_config, temp_dir):
     return result
 
 
+def copy_database(prefix, database, db_config, temp_dir, active_config):
+    """This function creates a test database from an active database
+    with determined config
+
+    :param prefix: Prefix for database name
+    :param database: database to be copied
+    :param db_config: Dict with database configuration
+    :param temp_dir: Temporary directory for dump
+    :return: Database name if succesfull, 1 otherwise
+    """
+    db_name = '%s_%s_%s'% \
+              (prefix, database,
+               datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
+    try:
+        dbase = utils.dump_database(temp_dir, database,
+                                    active_config['superpswd'],
+                                    active_config['host'],
+                                    active_config['port']['xmlrpc'])
+    except:
+        dbase = utils.dump_database(temp_dir, database,
+                                    active_config['superpswd'],
+                                    active_config['host'],
+                                    active_config['port']['opt'])
+    result = restore_database(db_name, db_config, dbase, "xmlrpc")
+    if result == 1:
+        result = restore_database(db_name, db_config, dbase, "opt")
+    utils.clean_files([dbase])
+    return result
+
+
+def select_file(path):
+    """This function selects the most recent backup file in 'path' dir
+
+    :param path: Backup path directory
+    :return: Most recent db_file
+    """
+    logger.debug("Selecting backup file to be restored")
+    db_select = os.listdir(path)[0]
+    for dfile in os.listdir(path):
+        if get_date(dfile) > get_date(db_select):
+            db_select = dfile
+    logger.info("File %s selected", os.path.basename(db_select))
+    return db_select
+
+
 if __name__ == '__main__':
-    logger.info("Creating %s database from %s backup", config, db_file)
     db_config = utils.load_json(json_file)
-    db = create_test_db(config, db_file, db_config[config], tmp)
+    if db_file:
+        logger.info("Creating %s database from %s backup", config, db_file)
+        db = create_test_db(config, db_file, db_config[config], tmp)
+    if path:
+        db_file = select_file(path)
+        logger.info("Creating %s database from %s backup", config, db_file)
+        db = create_test_db(config, db_file, db_config[config], tmp)
+    if database:
+        logger.info("Creating %s database from %s active database", config,
+                    database)
+        if active_json_file:
+            db_active_config = utils.load_json(active_json_file)
+        else:
+            db_active_config = db_config
+        db = copy_database(config, database, db_config[config], tmp,
+                           db_active_config)
     if db != 1:
         logger.info("Database %s created", db)

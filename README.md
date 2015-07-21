@@ -5,7 +5,7 @@ A simple set of python scripts to make an Odoo 8.0 backup using oerplib, in this
 
 ## Backup
 
-To Backup a database you must run (if Odoo server is on localhost and serving on default port)::
+To Backup a database you must run (if Odoo server is on localhost and serving on default port):
 
     python backup_ws.py database_name
 
@@ -19,7 +19,7 @@ Other parameters can be user, to see how just run:
 
 ## Restore
 
-To restore a backup made with **backup_ws.py** (if Odoo server is on localhost and serving on default port)::
+To restore a backup made with **backup_ws.py** (if Odoo server is on localhost and serving on default port):
     
     python restore_db_ws.py database_name -f route/to/file.tar.bz2
 
@@ -28,6 +28,12 @@ Else:
     python restore_db_ws.py database_name -H host_name -p odoo_xml_rpc_port -f route/to/file.tar.bz2
 
 Database name and file are mandaroty fields
+
+If you get a memory error when trying to restore the database and you are using docker you can use:
+
+    python restore_db.py -d database_name -f docker_name_or_id -b route/to/file.tar.bz2
+
+Note that the previous command does not use web services to restore the database and asumes that you started the container using the [deployment templates](https://github.com/Vauxoo/deploy-templates/tree/master/ansible), this script reads the env vars that was created in the [env section](https://github.com/Vauxoo/deploy-templates/blob/master/ansible/start.yml#L16)
 
 ## Branches
 
