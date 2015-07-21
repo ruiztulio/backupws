@@ -340,7 +340,7 @@ def decode_b64_file(src, dst):
             for line in source_file:
                 destination_file.write(base64.b64decode(line))
 
-def restore_direct(backup, odoo_config, working_dir, container_name=None):
+def restore_direct(backup, odoo_config, working_dir):
     """ Restore a pg_dump in sql format or b64 generated with the odoo webservice
 
     Args:
@@ -368,8 +368,8 @@ def restore_direct(backup, odoo_config, working_dir, container_name=None):
             return None
         dump_name = os.path.join(dest_dir, 'dump.sql')
     pgrestore_database(dump_name, odoo_config)
-    if container_name:
-        restore_docker_filestore(filestore_folder, odoo_config.get('database'), container_name)
+    if 'odoo_container' in odoo_config:
+        restore_docker_filestore(filestore_folder, odoo_config)
     else:
         restore_instance_filestore(filestore_folder, odoo_config)
     return True
@@ -488,16 +488,17 @@ def get_docker_env(container_name, docker_url="unix://var/run/docker.sock"):
 
     return res
 
-def restore_docker_filestore(src_folder, database_name, container_name,
+def restore_docker_filestore(src_folder, odoo_config,
                              docker_url="unix://var/run/docker.sock"):
     """ Restore a filestore folder into a docker container that is already running
         and has the /tmp folder mounted as a volume un the host
 
     Args:
         src_folder (str): Full path to the folder thar contains the filestore you want to restore
-        container_name (str): container name or id
+        odoo_config (dict): condiguration
         docker_url (str): url to use in docker cli client
     """
+    container_name = odoo_config.get('odoo_container')
     cli = Client(base_url=docker_url, timeout=3000)
     try:
         inspected = cli.inspect_container(container_name)
@@ -523,13 +524,13 @@ def restore_docker_filestore(src_folder, database_name, container_name,
         return None
     shutil.move(src_folder, dest_folder)
     env_vars = get_docker_env(container_name)
-    odoo_config = env_vars.get('ODOO_CONFIG_FILE')
-    res = cli.execute(container_name, "cat {}".format(odoo_config))
-    for i in res.split('\n'):
-        if i.strip().startswith("data_dir"):
-            data_dir = i.split("=")[1].strip()
+    odoo_config_file = env_vars.get('ODOO_CONFIG_FILE')
+    res = cli.execute(container_name, "cat {}".format(odoo_config_file))
+    for line in res.split('\n'):
+        if line.strip().startswith("data_dir"):
+            data_dir = line.split("=")[1].strip()
             break
-    fs_name = os.path.join(data_dir, "filestore", database_name)    
+    fs_name = os.path.join(data_dir, "filestore", odoo_config.get('database'))    
     cli.execute(container_name, "mv /tmp/filestore {}".format(fs_name))
     cli.execute(container_name, "chown -R {0}:{0} {1}".format(env_vars.get('ODOO_USER'), fs_name))
 
@@ -626,7 +627,7 @@ def parse_docker_config(container_name, docker_url="unix://var/run/docker.sock")
     if not res.get('data_dir'):
         logger.error(('The attachments dicrectory was not mounted from the host,',
                       'wont be able to backup attachments'))
-    res.upate({'odoo_container': container_name})
+    res.update({'odoo_container': container_name})
     return res
 
 def dropdb_direct(database_config):
@@ -649,17 +650,15 @@ def dropdb_direct(database_config):
     else:
         return True
 
-def remove_attachments(odoo_config, container=False):
+def remove_attachments(odoo_config):
     """Remove attachements dolder
     Args:
-        odoo_config (dict): Odoo condiguration
-        container (str): Docker container name or id
+        odoo_config (dict): Odoo configuration
     """
-    if container:
-        env_vars = get_docker_env(container)
+    if 'odoo_container' in odoo_config:
+        env_vars = get_docker_env(odoo_config.get('odoo_container'))
         odoo_config_file = env_vars.get('ODOO_CONFIG_FILE')
         cli = Client()
-
         res = cli.execute(container, "cat {}".format(odoo_config_file))
         for i in res.split('\n'):
             if i.strip().startswith("data_dir"):
