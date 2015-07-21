@@ -417,7 +417,8 @@ def pgdump_database(dest_folder, database_config):
     """
     logger.debug("Dumping database %s into %s folder", database_config.get('database'), dest_folder)
     dump_name = os.path.join(dest_folder, 'database_dump.sql')
-    os.environ['PGPASSWORD'] = database_config.get('db_password')
+    if database_config.get('db_password') != 'False':
+        os.environ['PGPASSWORD'] = database_config.get('db_password')
     dump_cmd = 'pg_dump {database} -O -f {0} -p {db_port} -h {db_host} -U {db_user}' \
         .format(dump_name, **database_config)
     shell = spur.LocalShell()
