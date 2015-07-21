@@ -1,3 +1,7 @@
+"""
+Vaious helper method, soon all of them will be part of vxTools,
+this is just a PoC to try some concepts and tests.
+"""
 import shutil
 import datetime
 import tarfile
@@ -8,16 +12,13 @@ import oerplib
 import socket
 import json
 import ConfigParser
-import subprocess
 import spur
 import shlex
-import collections
 from docker import Client
 import docker.errors
 from tempfile import gettempdir
 import base64
 import zipfile
-import sys
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -42,8 +43,8 @@ def save_json(info, filename):
             if not os.path.isabs(filename):
                 filename = os.path.abspath(filename)
             logger.debug("File saved")
-    except Exception as e:
-        logger.error(e)
+    except Exception as error:
+        logger.error(error)
     return filename
 
 
@@ -69,8 +70,8 @@ def clean_files(files):
         files (list): A list of absolute or relatove paths thar will be erased
     """
     items = files if hasattr(files, '__iter__') else [files]
-    for f in items:
-        fname = f[0] if hasattr(f, '__iter__') else f
+    for item in items:
+        fname = item[0] if hasattr(item, '__iter__') else item
         if os.path.isfile(fname):
             os.remove(fname)
         elif os.path.isdir(fname):
@@ -211,7 +212,8 @@ def generate_backup_name(database_name, reason=False):
         res = '%s_%s'%(database_name, datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
     return res
 
-def backup_database_ws(database_name, dest_folder, user, password, host, port, reason=False, tmp_dir=False):
+def backup_database_ws(database_name, dest_folder, user, password,
+                       host, port, reason=False, tmp_dir=False):
     """ Receive database name and back it up
 
     Args:
@@ -248,7 +250,7 @@ def backup_databases(databases_list, dest_folder,
     """
     for database in databases_list:
         backup_database_ws(database, dest_folder, user, password, host, port,
-                        reason, tmp_dir)
+                           reason, tmp_dir)
 
 
 def restore_database(dest_folder, database_name, super_user_pass, host, port):
@@ -331,12 +333,23 @@ def test_connection(db_name, host=False, port=8069, user=False,
     return True
 
 def decode_b64_file(src, dst):
+    """ Read src base64 encoded file and output its conntent to dst file
+    """
     with open(src, 'r') as source_file:
         with open(dst, 'w') as destination_file:
             for line in source_file:
                 destination_file.write(base64.b64decode(line))
 
 def restore_direct(backup, odoo_config, working_dir, container_name=None):
+    """ Restore a pg_dump in sql format or b64 generated with the odoo webservice
+
+    Args:
+        backup (str): full path to the backup you want to restore
+        odoo_config (dict): dictionary with the required odoo condiguration
+        working_dir (str): full path to the temp dicrectory where the files will be extracted
+        container_name (str): optional docker container name or id that contains 
+                              the configuration to be used
+    """
     logger.info('Extracting files')
     logger.debug('Extracting %s into %s', backup, working_dir)
     dest_dir = decompress_files(backup, working_dir)
@@ -350,8 +363,8 @@ def restore_direct(backup, odoo_config, working_dir, container_name=None):
         logger.info('Unziping backup')
         try:
             zfile.extractall(dest_dir)
-        except IOError as e:
-            logger.error('Could not extract database_dump.b64: %s', e.message)
+        except IOError as error:
+            logger.error('Could not extract database_dump.b64: %s', error.message)
             return None
         dump_name = os.path.join(dest_dir, 'dump.sql')
     pgrestore_database(dump_name, odoo_config)
@@ -376,10 +389,16 @@ def pase_odoo_configfile(filename):
     try:
         config.readfp(open(filename))
     except IOError:
-        logger.error('configuration file "%s" not found',  filename)
+        logger.error('configuration file "%s" not found', filename)
         return None
-    res.update({'db_host' : config.get('options', 'db_host') if config.get('options', 'db_host') != 'False' else 'localhost'})
-    res.update({'db_port' : config.get('options', 'db_port') if config.get('options', 'db_port') != 'False' else 5432})
+    if config.get('options', 'db_host') != 'False':
+        res.update({'db_host' : config.get('options', 'db_host')})
+    else:
+        res.update({'db_host' : 'localhost'})
+    if config.get('options', 'db_port') != 'False':
+        res.update({'db_port' : config.get('options', 'db_port')})
+    else:
+        res.update({'db_port' : 5432})
     res.update({'db_user' : config.get('options', 'db_user')})
     res.update({'db_password' : config.get('options', 'db_password')})
     res.update({'data_dir' : config.get('options', 'data_dir')})
@@ -399,15 +418,16 @@ def pgdump_database(dest_folder, database_config):
     logger.debug("Dumping database %s into %s folder", database_config.get('database'), dest_folder)
     dump_name = os.path.join(dest_folder, 'database_dump.sql')
     os.environ['PGPASSWORD'] = database_config.get('db_password')
-    dump_cmd = 'pg_dump {database} -O -f {0} -p {db_port} -h {db_host} -U {db_user}'.format(dump_name, **database_config)
+    dump_cmd = 'pg_dump {database} -O -f {0} -p {db_port} -h {db_host} -U {db_user}' \
+        .format(dump_name, **database_config)
     shell = spur.LocalShell()
     try:
-        result = shell.run(shlex.split(dump_cmd))
-    except spur.results.RunProcessError as e:
-        if 'does not exist' in e.stderr_output:
+        shell.run(shlex.split(dump_cmd))
+    except spur.results.RunProcessError as error:
+        if 'does not exist' in error.stderr_output:
             logger.error('Database does not exists, check name and try again')
         else:
-            logger.error('Could not dump database, error message: %s', e.stderr_output)
+            logger.error('Could not dump database, error message: %s', error.stderr_output)
         return None
     return dump_name
 
@@ -423,20 +443,22 @@ def pgrestore_database(dump_name, database_config):
     logger.debug("Creating database %s", database_config.get('database'))
     if database_config.get('db_password') != 'False':
         os.environ['PGPASSWORD'] = database_config.get('db_password')
-    createdb_cmd = 'createdb {database} -T template1 -E utf8 -U {db_user} -p {db_port} -h {db_host}'.format(**database_config)
-    restore_cmd = 'psql {database} -f {0} -p {db_port} -h {db_host} -U {db_user}'.format(dump_name, **database_config)
+    createdb_cmd = 'createdb {database} -T template1 -E utf8 -U {db_user} -p {db_port} -h {db_host}'
+    createdb_cmd = createdb_cmd.format(**database_config)
+    restore_cmd = 'psql {database} -f {0} -p {db_port} -h {db_host} -U {db_user}' \
+        .format(dump_name, **database_config)
 
     shell = spur.LocalShell()
     try:
-        result = shell.run(shlex.split(createdb_cmd))
-    except spur.results.RunProcessError as e:
-        logger.error('Could not create database, error message: %s', e.stderr_output)
+        shell.run(shlex.split(createdb_cmd))
+    except spur.results.RunProcessError as error:
+        logger.error('Could not create database, error message: %s', error.stderr_output)
         return None
 
     try:
-        result = shell.run(shlex.split(restore_cmd))
-    except spur.results.RunProcessError as e:
-        logger.error('Could not restore database, error message: %s', e.stderr_output)
+        shell.run(shlex.split(restore_cmd))
+    except spur.results.RunProcessError as error:
+        logger.error('Could not restore database, error message: %s', error.stderr_output)
         dropdb_direct(database_config)
         return None
     return True
@@ -451,7 +473,6 @@ def get_docker_env(container_name, docker_url="unix://var/run/docker.sock"):
     """
     res = {}
     cli = Client(base_url=docker_url)
-    containers = cli.containers(all=True)
     try:
         inspected = cli.inspect_container(container_name)
     except docker.errors.APIError as error:
@@ -467,7 +488,8 @@ def get_docker_env(container_name, docker_url="unix://var/run/docker.sock"):
 
     return res
 
-def restore_docker_filestore(src_folder, database_name, container_name, docker_url="unix://var/run/docker.sock"):
+def restore_docker_filestore(src_folder, database_name, container_name,
+                             docker_url="unix://var/run/docker.sock"):
     """ Restore a filestore folder into a docker container that is already running
         and has the /tmp folder mounted as a volume un the host
 
@@ -477,7 +499,6 @@ def restore_docker_filestore(src_folder, database_name, container_name, docker_u
         docker_url (str): url to use in docker cli client
     """
     cli = Client(base_url=docker_url, timeout=3000)
-    containers = cli.containers(all=True)
     try:
         inspected = cli.inspect_container(container_name)
     except docker.errors.APIError as error:
@@ -519,7 +540,9 @@ def restore_instance_filestore(src_folder, odoo_config):
         odoo_config (dict): Odoo configuration
 
     """
-    dest_folder = os.path.join(odoo_config.get('data_dir'), 'filestore', odoo_config.get('database'))
+    dest_folder = os.path.join(odoo_config.get('data_dir'),
+                               'filestore',
+                               odoo_config.get('database'))
     shutil.move(src_folder, dest_folder)
 
 def backup_database_direct(odoo_config, dest_folder, reason=False, tmp_dir=False):
@@ -544,12 +567,15 @@ def backup_database_direct(odoo_config, dest_folder, reason=False, tmp_dir=False
     bkp_name = generate_backup_name(odoo_config.get('database'), reason)
     files2backup = [dump_name]
     if odoo_config.get('data_dir'):
-        attachments_folder = os.path.join(odoo_config.get('data_dir'), 'filestore', odoo_config.get('database'))
+        attachments_folder = os.path.join(odoo_config.get('data_dir'),
+                                          'filestore',
+                                          odoo_config.get('database'))
         if os.path.exists(attachments_folder):
             logger.debug('Attachements folder "%s"', attachments_folder)
             files2backup.append((attachments_folder, 'filestore'))
         else:
-            logger.warn('Folder "%s" does not exists, attachements are not being added to the backup', attachments_folder)
+            logger.warn(('Folder "%s" does not exists,', 
+                         ' attachements are not being added to the backup'), attachments_folder)
     else:
         logger.info('There is not attachements folder to backup')
     logger.info('Compressing files')
@@ -580,7 +606,6 @@ def parse_docker_config(container_name, docker_url="unix://var/run/docker.sock")
 
 
     cli = Client(base_url=docker_url)
-    containers = cli.containers(all=True)
     try:
         inspected = cli.inspect_container(container_name)
     except docker.errors.APIError as error:
@@ -643,5 +668,7 @@ def remove_attachments(odoo_config, container=False):
         fs_name = os.path.join(data_dir, "filestore", odoo_config.get('database'))
         cli.execute(container, "rm -r {}".format(fs_name))
     else:
-        fs_name = os.path.join(odoo_config.get('data_dir'), 'filestore', odoo_config.get('database'))
+        fs_name = os.path.join(odoo_config.get('data_dir'),
+                               'filestore',
+                               odoo_config.get('database'))
         shutil.rmtree(fs_name)
