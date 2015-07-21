@@ -510,7 +510,7 @@ def restore_docker_filestore(src_folder, database_name, container_name, docker_u
             break
     fs_name = os.path.join(data_dir, "filestore", database_name)    
     cli.execute(container_name, "mv /tmp/filestore {}".format(fs_name))
-    cli.execute(container_name, "chown -R {0}:{0} {}".format(env_vars.get('ODOO_USER'), fs_name))
+    cli.execute(container_name, "chown -R {0}:{0} {1}".format(env_vars.get('ODOO_USER'), fs_name))
 
 def restore_instance_filestore(src_folder, odoo_config):
     """ Restore filestore to a instance directly
