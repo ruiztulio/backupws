@@ -59,6 +59,7 @@ else:
 
 logger.info('Estableciendo conexion con el servidor postgres')
 try:
+    logger.debug('Cadena de conexion: "%s"', str_conn)
     conn = psycopg2.connect(str_conn)
     conn.set_isolation_level(0)
 except Exception as e:
@@ -70,6 +71,7 @@ logger.info('Ejecutando consultas')
 for name in actions:
     try:
         logger.info(' - Ejecutando %s ' % name)
+        logger.debug('Query: "%s"', sqls.get(name))
         cur.execute(sqls.get(name))
     except Exception as e:
         logger.warn('No se pudo ejecutar a la base de datos: %s' % e.message)

@@ -336,7 +336,7 @@ def decode_b64_file(src, dst):
             for line in source_file:
                 destination_file.write(base64.b64decode(line))
 
-def restore_direct(backup, odoo_config, working_dir, container_name):
+def restore_direct(backup, odoo_config, working_dir, container_name=None):
     logger.info('Extracting files')
     logger.debug('Extracting %s into %s', backup, working_dir)
     dest_dir = decompress_files(backup, working_dir)
@@ -355,7 +355,10 @@ def restore_direct(backup, odoo_config, working_dir, container_name):
             return None
         dump_name = os.path.join(dest_dir, 'dump.sql')
     pgrestore_database(dump_name, odoo_config)
-    restore_filestore(filestore_folder, odoo_config.get('database'), container_name)
+    if container_name:
+        restore_docker_filestore(filestore_folder, odoo_config.get('database'), container_name)
+    else:
+        restore_instance_filestore(filestore_folder, odoo_config)
     return True
 
 
@@ -375,8 +378,8 @@ def pase_odoo_configfile(filename):
     except IOError:
         logger.error('configuration file "%s" not found',  filename)
         return None
-    res.update({'db_host' : config.get('options', 'db_host')})
-    res.update({'db_port' : config.get('options', 'db_port')})
+    res.update({'db_host' : config.get('options', 'db_host') if config.get('options', 'db_host') != 'False' else 'localhost'})
+    res.update({'db_port' : config.get('options', 'db_port') if config.get('options', 'db_port') != 'False' else 5432})
     res.update({'db_user' : config.get('options', 'db_user')})
     res.update({'db_password' : config.get('options', 'db_password')})
     res.update({'data_dir' : config.get('options', 'data_dir')})
@@ -417,9 +420,9 @@ def pgrestore_database(dump_name, database_config):
         None if could not restore databse, True otherwise
     """
     logger.debug("Creating database %s", database_config.get('database'))
-    os.environ['PGPASSWORD'] = database_config.get('db_password')
+    if database_config.get('db_password') != 'False':
+        os.environ['PGPASSWORD'] = database_config.get('db_password')
     createdb_cmd = 'createdb {database} -T template1 -E utf8 -U {db_user} -p {db_port} -h {db_host}'.format(**database_config)
-    dropdb_cmd = 'dropdb {database} -U {db_user} -p {db_port} -h {db_host}'.format(**database_config)
     restore_cmd = 'psql {database} -f {0} -p {db_port} -h {db_host} -U {db_user}'.format(dump_name, **database_config)
 
     shell = spur.LocalShell()
@@ -433,7 +436,7 @@ def pgrestore_database(dump_name, database_config):
         result = shell.run(shlex.split(restore_cmd))
     except spur.results.RunProcessError as e:
         logger.error('Could not restore database, error message: %s', e.stderr_output)
-        result = shell.run(shlex.split(dropdb_cmd))
+        dropdb_direct(database_config)
         return None
     return True
 
@@ -463,7 +466,7 @@ def get_docker_env(container_name, docker_url="unix://var/run/docker.sock"):
 
     return res
 
-def restore_filestore(src_folder, database_name, container_name, docker_url="unix://var/run/docker.sock"):
+def restore_docker_filestore(src_folder, database_name, container_name, docker_url="unix://var/run/docker.sock"):
     """ Restore a filestore folder into a docker container that is already running
         and has the /tmp folder mounted as a volume un the host
 
@@ -506,6 +509,17 @@ def restore_filestore(src_folder, database_name, container_name, docker_url="uni
             break
     fs_name = os.path.join(data_dir, "filestore", database_name)    
     cli.execute(container_name, "mv /tmp/filestore {}".format(fs_name))
+    cli.execute(container_name, "chown -R {0}:{0} {1}".format(env_vars.get('ODOO_USER'), fs_name))
+
+def restore_instance_filestore(src_folder, odoo_config):
+    """ Restore filestore to a instance directly
+    Args:
+        src_folder (str): Full path to the folder thar contains the filestore you want to restore
+        odoo_config (dict): Odoo configuration
+
+    """
+    dest_folder = os.path.join(odoo_config.get('data_dir'), 'filestore', odoo_config.get('database'))
+    shutil.move(src_folder, dest_folder)
 
 def backup_database_direct(odoo_config, dest_folder, reason=False, tmp_dir=False):
     """ Receive database name and back it up
@@ -586,3 +600,45 @@ def parse_docker_config(container_name, docker_url="unix://var/run/docker.sock")
     if not res.get('data_dir'):
         logger.error('The attachments dicrectory was not mounted from the host, wont be able to backup attachments')
     return res
+
+def dropdb_direct(database_config):
+    """ Drop a database using the config provided
+    Args:
+        database_config (dict): Database conextion parameters
+    return:
+        True if sucess or None otherwise
+    """
+    if database_config.get('db_password') != 'False':
+        os.environ['PGPASSWORD'] = database_config.get('db_password')
+    dropdb_cmd = 'dropdb {database} -U {db_user} -p {db_port} -h {db_host}' \
+    .format(**database_config)
+    shell = spur.LocalShell()
+    try:
+        shell.run(shlex.split(dropdb_cmd))
+    except spur.results.RunProcessError as error:
+        logger.error('Could not drop database, error message: %s', error.stderr_output)
+        return None
+    else:
+        return True
+
+def remove_attachments(odoo_config, container=False):
+    """Remove attachements dolder
+    Args:
+        odoo_config (dict): Odoo condiguration
+        container (str): Docker container name or id
+    """
+    if container:
+        env_vars = get_docker_env(container)
+        odoo_config_file = env_vars.get('ODOO_CONFIG_FILE')
+        cli = Client()
+
+        res = cli.execute(container, "cat {}".format(odoo_config_file))
+        for i in res.split('\n'):
+            if i.strip().startswith("data_dir"):
+                data_dir = i.split("=")[1].strip()
+                break
+        fs_name = os.path.join(data_dir, "filestore", odoo_config.get('database'))
+        cli.execute(container, "rm -r {}".format(fs_name))
+    else:
+        fs_name = os.path.join(odoo_config.get('data_dir'), 'filestore', odoo_config.get('database'))
+        shutil.rmtree(fs_name)
