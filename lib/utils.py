@@ -646,6 +646,8 @@ def dropdb_direct(database_config):
     try:
         shell.run(shlex.split(dropdb_cmd))
     except spur.results.RunProcessError as error:
+        if 'does not exist' in error.stderr_output:
+            return True
         logger.error('Could not drop database, error message: %s', error.stderr_output)
         return None
     else:
