@@ -1,7 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-This script is a PoC to make Odoo DB dumps using Oerplib
+This script is a PoC to make Odoo DB dumps config gotten from docker env vars
+or directly from config file
 """
 import logging
 import configargparse
