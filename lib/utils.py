@@ -526,14 +526,31 @@ def restore_docker_filestore(src_folder, odoo_config,
     shutil.move(src_folder, dest_folder)
     env_vars = get_docker_env(container_name)
     odoo_config_file = env_vars.get('ODOO_CONFIG_FILE')
-    res = cli.execute(container_name, "cat {}".format(odoo_config_file))
-    for line in res.split('\n'):
+    try:
+        res = cli.copy(container_name, odoo_config_file)
+    except docker.errors.APIError as error:
+        if "Could not find the file" in error.message:
+            logger.error("Odoo config file is not in the path '%s'", odoo_config_file)
+        else:
+            logger.error("Could not get the config file '%s'", error.message)
+        return None
+    for line in res.data.split('\n'):
         if line.strip().startswith("data_dir"):
             data_dir = line.split("=")[1].strip()
             break
-    fs_name = os.path.join(data_dir, "filestore", odoo_config.get('database'))    
-    cli.execute(container_name, "mv /tmp/filestore {}".format(fs_name))
-    cli.execute(container_name, "chown -R {0}:{0} {1}".format(env_vars.get('ODOO_USER'), fs_name))
+    fs_name = os.path.join(data_dir, "filestore", odoo_config.get('database'))
+    exec_id = cli.exec_create(container_name, "rm -rf {0}".format(fs_name))
+    res = cli.exec_start(exec_id.get('Id'))
+    if res:
+        logger.info("Removing previous filestore returned '%s'", res)
+    exec_id = cli.exec_create(container_name, "mv /tmp/filestore {0}".format(fs_name))
+    res = cli.exec_start(exec_id.get('Id'))
+    if res:
+        logger.info("Moving filestore returned '%s'", res)
+    exec_id = cli.exec_create(container_name, "chown -R {0}:{0} {1}".format(env_vars.get('ODOO_USER'), fs_name))
+    res = cli.exec_start(exec_id.get('Id'))
+    if res:
+        logger.info("Changing filestore owner returned '%s'", res)
 
 def restore_instance_filestore(src_folder, odoo_config):
     """ Restore filestore to a instance directly
@@ -662,13 +679,24 @@ def remove_attachments(odoo_config):
         env_vars = get_docker_env(odoo_config.get('odoo_container'))
         odoo_config_file = env_vars.get('ODOO_CONFIG_FILE')
         cli = Client()
-        res = cli.execute(container, "cat {}".format(odoo_config_file))
-        for i in res.split('\n'):
+        try:
+            res = cli.copy(odoo_config.get('odoo_container'), odoo_config_file)
+        except docker.errors.APIError as error:
+            if "Could not find the file" in error.message:
+                logger.error("Odoo config file is not in the path '%s'", odoo_config_file)
+            else:
+                logger.error("Could not get the config file '%s'", error.message)
+            return None
+
+        for i in res.data.split('\n'):
             if i.strip().startswith("data_dir"):
                 data_dir = i.split("=")[1].strip()
                 break
         fs_name = os.path.join(data_dir, "filestore", odoo_config.get('database'))
-        cli.execute(odoo_config.get('odoo_container'), "rm -r {}".format(fs_name))
+        exec_id = cli.exec_create(odoo_config.get('odoo_container'), "rm -r {}".format(fs_name))
+        res = cli.exec_start(exec_id.get('Id'))
+        if res:
+            logger.info("Removing previous filestore returned '%s'", res)
     else:
         fs_name = os.path.join(odoo_config.get('data_dir'),
                                'filestore',
