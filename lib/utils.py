@@ -538,9 +538,19 @@ def restore_docker_filestore(src_folder, odoo_config,
         if line.strip().startswith("data_dir"):
             data_dir = line.split("=")[1].strip()
             break
-    fs_name = os.path.join(data_dir, "filestore", odoo_config.get('database'))    
-    cli.execute(container_name, "mv /tmp/filestore {}".format(fs_name))
-    cli.execute(container_name, "chown -R {0}:{0} {1}".format(env_vars.get('ODOO_USER'), fs_name))
+    fs_name = os.path.join(data_dir, "filestore", odoo_config.get('database'))
+    exec_id = cli.exec_create(container_name, "rm -rf {0}".format(fs_name))
+    res = cli.exec_start(exec_id.get('Id'))
+    if res:
+        logger.info("Removing previous filestore returned '%s'", res)
+    exec_id = cli.exec_create(container_name, "mv /tmp/filestore {0}".format(fs_name))
+    res = cli.exec_start(exec_id.get('Id'))
+    if res:
+        logger.info("Moving filestore returned '%s'", res)
+    exec_id = cli.exec_create(container_name, "chown -R {0}:{0} {1}".format(env_vars.get('ODOO_USER'), fs_name))
+    res = cli.exec_start(exec_id.get('Id'))
+    if res:
+        logger.info("Changing filestore owner returned '%s'", res)
 
 def restore_instance_filestore(src_folder, odoo_config):
     """ Restore filestore to a instance directly
