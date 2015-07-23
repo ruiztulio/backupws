@@ -680,7 +680,7 @@ def remove_attachments(odoo_config):
         odoo_config_file = env_vars.get('ODOO_CONFIG_FILE')
         cli = Client()
         try:
-            res = cli.copy(container_name, odoo_config_file)
+            res = cli.copy(odoo_config.get('odoo_container'), odoo_config_file)
         except docker.errors.APIError as error:
             if "Could not find the file" in error.message:
                 logger.error("Odoo config file is not in the path '%s'", odoo_config_file)
@@ -693,7 +693,10 @@ def remove_attachments(odoo_config):
                 data_dir = i.split("=")[1].strip()
                 break
         fs_name = os.path.join(data_dir, "filestore", odoo_config.get('database'))
-        cli.execute(odoo_config.get('odoo_container'), "rm -r {}".format(fs_name))
+        exec_id = cli.exec_create(odoo_config.get('odoo_container'), "rm -r {}".format(fs_name))
+        res = cli.exec_start(exec_id.get('Id'))
+        if res:
+            logger.info("Removing previous filestore returned '%s'", res)
     else:
         fs_name = os.path.join(odoo_config.get('data_dir'),
                                'filestore',
