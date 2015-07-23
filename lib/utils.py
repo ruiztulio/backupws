@@ -526,8 +526,15 @@ def restore_docker_filestore(src_folder, odoo_config,
     shutil.move(src_folder, dest_folder)
     env_vars = get_docker_env(container_name)
     odoo_config_file = env_vars.get('ODOO_CONFIG_FILE')
-    res = cli.execute(container_name, "cat {}".format(odoo_config_file))
-    for line in res.split('\n'):
+    try:
+        res = cli.copy(container_name, odoo_config_file)
+    except docker.errors.APIError as error:
+        if "Could not find the file" in error.message:
+            logger.error("Odoo config file is not in the path '%s'", odoo_config_file)
+        else:
+            logger.error("Could not get the config file '%s'", error.message)
+        return None
+    for line in res.data.split('\n'):
         if line.strip().startswith("data_dir"):
             data_dir = line.split("=")[1].strip()
             break
@@ -662,8 +669,16 @@ def remove_attachments(odoo_config):
         env_vars = get_docker_env(odoo_config.get('odoo_container'))
         odoo_config_file = env_vars.get('ODOO_CONFIG_FILE')
         cli = Client()
-        res = cli.execute(container, "cat {}".format(odoo_config_file))
-        for i in res.split('\n'):
+        try:
+            res = cli.copy(container_name, odoo_config_file)
+        except docker.errors.APIError as error:
+            if "Could not find the file" in error.message:
+                logger.error("Odoo config file is not in the path '%s'", odoo_config_file)
+            else:
+                logger.error("Could not get the config file '%s'", error.message)
+            return None
+
+        for i in res.data.split('\n'):
             if i.strip().startswith("data_dir"):
                 data_dir = i.split("=")[1].strip()
                 break
