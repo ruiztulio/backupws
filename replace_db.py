@@ -28,7 +28,7 @@ def main(main_args):
                help=('Docker container which has the configuration',
                      ' (mutually exclusive with -o option)'),
                default=False)
-    parser.add('-c', '--config_file', 
+    parser.add('-c', '--config_file',
                help='Config file path', is_config_file=True)
     parser.add("-t", "--temp_dir", help="Temp working dir",
                default=gettempdir())
@@ -39,7 +39,7 @@ def main(main_args):
     if (args.from_docker and args.odoo_configfile) or \
         (not args.from_docker and not args.odoo_configfile):
         print "You must specify one of two options -o or -f\n\n"
-        print(parser.format_help())
+        print parser.format_help()
         return 1
     if args.from_docker:
         odoo_cfg = utils.parse_docker_config(args.from_docker)
