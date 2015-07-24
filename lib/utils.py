@@ -34,7 +34,8 @@ def check_installation():
         if it is too old the dockerpy will fail
     """
     if docker.__version__ != "1.2.3":
-        logger.error("Docker-py version must be 1.2.3, please install the proper one")
+        logger.error(("Docker-py version must be 1.2.3 and yours is %s,",
+                      "please install the proper one"), docker.__version__)
         raise Exception("docker-py version != 1.2.3")
     logger.info("Docker-py version %s", docker.__version__)
     out, err = subprocess.Popen(["docker", "--version"], stdout=subprocess.PIPE).communicate()
