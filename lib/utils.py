@@ -19,10 +19,33 @@ import docker.errors
 from tempfile import gettempdir
 import base64
 import zipfile
+import subprocess
+import re
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('utils')
+
+
+def check_installation():
+    """ This is a little helper that mus be executed before everything else just to check 
+        if all dependencies are according to the espected.
+        The docker version is gotten from console and not from docker-py interface because 
+        if it is too old the dockerpy will fail
+    """
+    if docker.__version__ != "1.2.3":
+        logger.error("Docker-py version must be 1.2.3, please install the proper one")
+        raise Exception("docker-py version != 1.2.3")
+    logger.info("Docker-py version %s", docker.__version__)
+    out, err = subprocess.Popen(["docker", "--version"], stdout=subprocess.PIPE).communicate()
+    res = re.search(".*(\d+\.\d+\.\d+).*", out) 
+    if res:
+        if res.group(1).strip() < "1.5.0":
+            logger.error("Docker version must be > 1.5.0, please install/upgrade to the proper one")
+            raise Exception("docker version <= 1.5.0")
+        logger.info("Docker version %s", res.group(1).strip())
+    else:
+        raise Exception("Docker version could not be determined")
 
 
 def save_json(info, filename):

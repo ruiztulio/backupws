@@ -24,7 +24,7 @@ parser.add("-f", "--from_docker", help="Docker container which has the database 
     default=False)
 
 args = parser.parse_args()
-
+utils.check_installation()
 logger.info('Inicializando parametros')
 
 sqls = {

@@ -36,6 +36,7 @@ def main(main_args):
                default=False, required=True)
 
     args = parser.parse_args(main_args)
+    utils.check_installation()
     if (args.from_docker and args.odoo_configfile) or \
         (not args.from_docker and not args.odoo_configfile):
         print "You must specify one of two options -o or -f\n\n"
