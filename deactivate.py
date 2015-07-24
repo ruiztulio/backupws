@@ -18,7 +18,7 @@ parser.add("-H", "--host", help="Database server host or socket", default=False)
 parser.add("-p", "--port", help="Database server port", default=False)
 parser.add("-r", "--rpass", help="Generate random passwords for users", default=False)
 parser.add("-a", "--actions", help="""Comma separated actions to execute (deactivates)
-                                    possibles actions: partner, mail, pac, cron, rpass""", 
+                                    possibles actions: partner, in_mail, out_mail, pac, cron, rpass""", 
     default=False)
 parser.add("-f", "--from_docker", help="Docker container which has the database configuration", 
     default=False)
@@ -29,7 +29,8 @@ logger.info('Inicializando parametros')
 
 sqls = {
     'partner' : "UPDATE res_partner SET opt_out = True;",
-    'mail' : "UPDATE ir_mail_server SET active = False, smtp_user = 'user', smtp_pass = 'pass';",
+    'out_mail' : "UPDATE ir_mail_server SET active = False, smtp_user = 'user', smtp_pass = 'pass';",
+    'in_mail' : "UPDATE fetchmail_server SET active = False, \"user\" = 'user', password = 'pass';",
     'pac' : "UPDATE params_pac SET active = False;",
     'cron' : "UPDATE ir_cron SET active = False WHERE model <> 'osv_memory.autovacuum';",
     'notify' : "UPDATE res_partner SET notify_email = 'none'"

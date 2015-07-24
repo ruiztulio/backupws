@@ -1,7 +1,9 @@
 backupws
 ========
 
-A simple set of python scripts to make an Odoo 8.0 backup using oerplib, in this way you can backup and restore attacments
+A simple set of python scripts to make an Odoo 8.0 backup using oerplib, in this way you can backup and restore attachments
+
+**NOTE** If you already has used this repo now you have to install/upgrade requirements.
 
 ## Backup
 
