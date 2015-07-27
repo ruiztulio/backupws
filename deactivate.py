@@ -37,7 +37,7 @@ def deactivate(sqls, str_conn, actions, rpass=False):
     logger.info('Executing queries')
     for name in actions:
         try:
-            logger.info(' - Executing %s ' % name)
+            logger.info(' - Executing %s ', name)
             logger.debug('Query: "%s"', sqls.get(name))
             cur.execute(sqls.get(name))
         except Exception as e:
@@ -49,7 +49,7 @@ def deactivate(sqls, str_conn, actions, rpass=False):
         users = cur.fetchall()
         for user in users:
             try:
-                logger.info(' - Updating %s ' % user[0])
+                logger.info(' - Updating %s ', user[0])
                 cur.execute("UPDATE res_user SET password = '%s' WHERE id = %s" % \
                             str(uuid.uuid4().get_hex().upper()[0:6]), user[0])
             except Exception as e:
