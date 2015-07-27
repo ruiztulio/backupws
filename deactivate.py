@@ -5,7 +5,6 @@
 import configargparse
 import sys
 import psycopg2
-import getpass
 import logging
 import uuid
 from lib import utils
