@@ -1,3 +1,5 @@
+"""Deactivates a database
+"""
 # -*- encoding: utf-8 -*-
 
 import configargparse
@@ -13,6 +15,14 @@ logger = logging.getLogger(__name__)
 
 
 def deactivate(sqls, str_conn, actions, rpass):
+    """Deactivates some database's parameters to avoid problems
+
+    Args:
+        sqls: Query dictionary to execute
+        str_conn: Database's connection string
+        actions: Actions to be applied
+        rpass: Updating users' passwords
+    """
     logger.info('Connecting to postgres server')
     try:
         logger.debug('Connection string: "%s"', str_conn)
