@@ -13,40 +13,39 @@ logger = logging.getLogger(__name__)
 
 
 def deactivate(sqls, str_conn, actions, rpass):
-    logger.info('Estableciendo conexion con el servidor postgres')
+    logger.info('Connecting to postgres server')
     try:
-        logger.debug('Cadena de conexion: "%s"', str_conn)
+        logger.debug('Connection string: "%s"', str_conn)
         conn = psycopg2.connect(str_conn)
         conn.set_isolation_level(0)
     except Exception as e:
-        logger.exception('No se pudo conectar a la base de datos: %s' % e.message)
+        logger.exception('Connection not established: %s' % e.message)
         raise
 
     cur = conn.cursor()
-    logger.info('Ejecutando consultas')
+    logger.info('Executing queries')
     for name in actions:
         try:
-            logger.info(' - Ejecutando %s ' % name)
+            logger.info(' - Executing %s ' % name)
             logger.debug('Query: "%s"', sqls.get(name))
             cur.execute(sqls.get(name))
         except Exception as e:
-            logger.warn('No se pudo ejecutar a la base de datos: %s' % e.message)
+            logger.warn("Couldn't be executed in database: %s" % e.message)
 
     if rpass:
-        logger.info('Actualizando claves de usuarios')
+        logger.info("Updating users' passwords")
         cur.execute("SELECT id from res_user")
         users = cur.fetchall()
         for user in users:
             try:
-                logger.info(' - Actualizando %s ' % user[0])
+                logger.info(' - Updating %s ' % user[0])
                 cur.execute("UPDATE res_user SET password = '%s' WHERE id = %s" % \
                     str(uuid.uuid4().get_hex().upper()[0:6]), user[0])
             except Exception as e:
-                logger.exception('No se pudo ejecutar a la base de datos: %s' % e.message)
+                logger.exception("Couldn't be executed in database: %s" % e.message)
                 raise
     cur.close()
     conn.close()
-    logger.info('Finalizado')
 
 
 def main(main_args):
@@ -69,9 +68,9 @@ def main(main_args):
                help="Docker container which has the database configuration",
                default=False)
 
-    args = parser.parse_args()
+    args = parser.parse_args(main_args)
     utils.check_installation()
-    logger.info('Inicializando parametros')
+    logger.info('Initiating parameters')
 
     sqls = {
         'partner': "UPDATE res_partner SET opt_out = True;",
