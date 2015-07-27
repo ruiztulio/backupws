@@ -31,7 +31,7 @@ def main(main_args):
                default=gettempdir())
     parser.add("-b", "--backup", help="Backup file to be restored",
                default=False, required=True)
-
+    utils.check_installation()
     args = parser.parse_args(main_args)
     if (args.from_docker and args.odoo_configfile) or \
         (not args.from_docker and not args.odoo_configfile):

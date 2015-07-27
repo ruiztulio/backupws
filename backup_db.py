@@ -41,6 +41,7 @@ def main(main_args):
                default=False)
 
     args = parser.parse_args(main_args)
+    utils.check_installation()
     if args.odoo_configfile:
         odoo_cfg = utils.pase_odoo_configfile(args.odoo_configfile)
     elif args.from_docker:
