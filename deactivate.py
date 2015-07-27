@@ -10,7 +10,8 @@ import logging
 import uuid
 from lib import utils
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 
@@ -29,7 +30,7 @@ def deactivate(sqls, str_conn, actions, rpass=False):
         conn = psycopg2.connect(str_conn)
         conn.set_isolation_level(0)
     except Exception as e:
-        logger.exception('Connection not established: %s' % e.message)
+        logger.exception('Connection not established: %s', e.message)
         raise
 
     cur = conn.cursor()
@@ -40,7 +41,7 @@ def deactivate(sqls, str_conn, actions, rpass=False):
             logger.debug('Query: "%s"', sqls.get(name))
             cur.execute(sqls.get(name))
         except Exception as e:
-            logger.warn("Couldn't be executed in database: %s" % e.message)
+            logger.warn("Couldn't be executed in database: %s", e.message)
 
     if rpass:
         logger.info("Updating users' passwords")
@@ -52,7 +53,7 @@ def deactivate(sqls, str_conn, actions, rpass=False):
                 cur.execute("UPDATE res_user SET password = '%s' WHERE id = %s" % \
                     str(uuid.uuid4().get_hex().upper()[0:6]), user[0])
             except Exception as e:
-                logger.exception("Couldn't be executed in database: %s" % e.message)
+                logger.exception("Couldn't be executed in database: %s", e.message)
                 raise
     cur.close()
     conn.close()
