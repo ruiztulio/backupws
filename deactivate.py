@@ -51,9 +51,10 @@ def deactivate(sqls, str_conn, actions, rpass=False):
             try:
                 logger.info(' - Updating %s ' % user[0])
                 cur.execute("UPDATE res_user SET password = '%s' WHERE id = %s" % \
-                    str(uuid.uuid4().get_hex().upper()[0:6]), user[0])
+                            str(uuid.uuid4().get_hex().upper()[0:6]), user[0])
             except Exception as e:
-                logger.exception("Couldn't be executed in database: %s", e.message)
+                logger.exception("Couldn't be executed in database: %s",
+                                 e.message)
                 raise
     cur.close()
     conn.close()
