@@ -668,8 +668,8 @@ def parse_docker_config(container_name, docker_url="unix://var/run/docker.sock")
         logger.error('Datadir not found, wont be able to backup attachments')
 
     if not res.get('data_dir'):
-        logger.error(('The attachments dicrectory was not mounted from the host,',
-                      'wont be able to backup attachments'))
+        logger.error(('The attachments dicrectory was not mounted from the host,'
+                      ' wont be able to backup attachments'))
     res.update({'odoo_container': container_name})
     return res
 
