@@ -5,7 +5,7 @@ This script is a PoC to resore Odoo DB dumps using Oerplib and
 works with backup_db_ws
 """
 import logging
-import argparse
+import configargparse
 import sys
 from lib import utils
 
@@ -19,7 +19,7 @@ logger = logging.getLogger('backup')
 def main(main_args):
     """ Main function
     """
-    parser = argparse.ArgumentParser()
+    parser = configargparse.ArgumentParser()
     parser.add_argument("db", help="Database name", default=False)
     parser.add_argument("-f", "--file", help="Backup name to resore", default=False, required=True)
     parser.add_argument("-t", "--temp_dir", help="Temp working dir", default="/tmp")

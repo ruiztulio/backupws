@@ -2,7 +2,7 @@
 import oerplib
 import logging
 import sys
-import argparse
+import configargparse
 import socket
 import random
 import time
@@ -95,7 +95,7 @@ def deactivate(db_name, user_login, user_password,
 def main(main_args):
     """ Main function
     """
-    parser = argparse.ArgumentParser()
+    parser = configargparse.ArgumentParser()
     parser.add_argument("db", help="Database name", default=False)
     parser.add_argument("-t", "--temp_dir", help="", default="/tmp")
     parser.add_argument("-d", "--backup_dir",

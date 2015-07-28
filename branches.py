@@ -6,7 +6,7 @@ and reconstruct branches from such files
 
 import os
 import logging
-import argparse
+import configargparse
 
 from git_branch import GitBranch
 from bzr_branch import BzrBranch
@@ -18,7 +18,7 @@ logging.basicConfig(level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('info_branches')
 
-parser = argparse.ArgumentParser()
+parser = configargparse.ArgumentParser()
 parser.add_argument("-f", "--json_file", help="Json file to use",
                     required=True)
 parser.add_argument("-p", "--path",
