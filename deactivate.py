@@ -88,8 +88,10 @@ def main(main_args):
 
     sqls = {
         'partner': "UPDATE res_partner SET opt_out = True;",
-        'out_mail': "UPDATE ir_mail_server SET active = False, smtp_user = 'user', smtp_pass = 'pass';",
-        'in_mail': "UPDATE fetchmail_server SET active = False, \"user\" = 'user', password = 'pass';",
+        'out_mail': ("UPDATE ir_mail_server"
+                     " SET active = False, smtp_user = 'user', smtp_pass = 'pass';"),
+        'in_mail': ("UPDATE fetchmail_server"
+                    " SET active = False, \"user\" = 'user', password = 'pass';"),
         'pac': "UPDATE params_pac SET active = False;",
         'cron': "UPDATE ir_cron SET active = False WHERE model <> 'osv_memory.autovacuum';",
         'notify': "UPDATE res_partner SET notify_email = 'none'"
