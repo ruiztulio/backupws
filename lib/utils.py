@@ -38,8 +38,8 @@ def check_installation():
                       "please install the proper one"), docker.__version__)
         raise Exception("docker-py version != 1.2.3")
     logger.info("Docker-py version %s", docker.__version__)
-    out, err = subprocess.Popen(["docker", "--version"], stdout=subprocess.PIPE).communicate()
-    res = re.search(".*(\d+\.\d+\.\d+).*", out) 
+    out, _ = subprocess.Popen(["docker", "--version"], stdout=subprocess.PIPE).communicate()
+    res = re.search(r".*(\d+\.\d+\.\d+).*", out) 
     if res:
         if res.group(1).strip() < "1.5.0":
             logger.error("Docker version must be > 1.5.0, please install/upgrade to the proper one")
@@ -67,7 +67,7 @@ def save_json(info, filename):
             if not os.path.isabs(filename):
                 filename = os.path.abspath(filename)
             logger.debug("File saved")
-    except Exception as error:
+    except IOError as error:
         logger.error(error)
     return filename
 
@@ -81,8 +81,8 @@ def load_json(filename):
     Returns: Object loaded
     """
     logger.debug("Opening file %s", filename)
-    with open(filename, "r") as f:
-        info = json.load(f)
+    with open(filename, "r") as dest:
+        info = json.load(dest)
         logger.debug("File loaded")
         return info
 
@@ -586,7 +586,8 @@ def restore_docker_filestore(src_folder, odoo_config,
     res = cli.exec_start(exec_id.get('Id'))
     if res:
         logger.info("Moving filestore returned '%s'", res)
-    exec_id = cli.exec_create(container_name, "chown -R {0}:{0} {1}".format(env_vars.get('ODOO_USER'), fs_name))
+    exec_id = cli.exec_create(container_name, "chown -R {0}:{0} {1}" \
+        .format(env_vars.get('ODOO_USER'), fs_name))
     res = cli.exec_start(exec_id.get('Id'))
     if res:
         logger.info("Changing filestore owner returned '%s'", res)

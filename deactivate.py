@@ -28,8 +28,8 @@ def deactivate(sqls, str_conn, actions, rpass=False):
         logger.debug('Connection string: "%s"', str_conn)
         conn = psycopg2.connect(str_conn)
         conn.set_isolation_level(0)
-    except Exception as e:
-        logger.exception('Connection not established: %s', e.message)
+    except Exception as error:
+        logger.exception('Connection not established: %s', error.message)
         raise
 
     cur = conn.cursor()
@@ -39,8 +39,11 @@ def deactivate(sqls, str_conn, actions, rpass=False):
             logger.info(' - Executing %s ', name)
             logger.debug('Query: "%s"', sqls.get(name))
             cur.execute(sqls.get(name))
-        except Exception as e:
-            logger.warn("Couldn't be executed in database: %s", e.message)
+        except psycopg2.ProgrammingError as error:
+            if 'does not exist' in error.message:
+                logger.warn("Couldn't be executed in database: %s", error.message.strip())
+            else:
+                raise
 
     if rpass:
         logger.info("Updating users' passwords")
@@ -51,9 +54,9 @@ def deactivate(sqls, str_conn, actions, rpass=False):
                 logger.info(' - Updating %s ', user[0])
                 cur.execute("UPDATE res_user SET password = '%s' WHERE id = %s" % \
                             str(uuid.uuid4().get_hex().upper()[0:6]), user[0])
-            except Exception as e:
+            except Exception as error:
                 logger.exception("Couldn't be executed in database: %s",
-                                 e.message)
+                                 error.message)
                 raise
     cur.close()
     conn.close()
@@ -85,8 +88,10 @@ def main(main_args):
 
     sqls = {
         'partner': "UPDATE res_partner SET opt_out = True;",
-        'out_mail': "UPDATE ir_mail_server SET active = False, smtp_user = 'user', smtp_pass = 'pass';",
-        'in_mail': "UPDATE fetchmail_server SET active = False, \"user\" = 'user', password = 'pass';",
+        'out_mail': ("UPDATE ir_mail_server"
+                     " SET active = False, smtp_user = 'user', smtp_pass = 'pass';"),
+        'in_mail': ("UPDATE fetchmail_server"
+                    " SET active = False, \"user\" = 'user', password = 'pass';"),
         'pac': "UPDATE params_pac SET active = False;",
         'cron': "UPDATE ir_cron SET active = False WHERE model <> 'osv_memory.autovacuum';",
         'notify': "UPDATE res_partner SET notify_email = 'none'"
