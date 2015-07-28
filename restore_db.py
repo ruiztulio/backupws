@@ -31,7 +31,7 @@ def main(main_args):
                default=gettempdir())
     parser.add("-b", "--backup", help="Backup file to be restored",
                default=False, required=True)
-
+    utils.check_installation()
     args = parser.parse_args(main_args)
     if (args.from_docker and args.odoo_configfile) or \
         (not args.from_docker and not args.odoo_configfile):
@@ -44,7 +44,7 @@ def main(main_args):
         odoo_cfg = utils.parse_docker_config(args.from_docker)
     odoo_cfg.update({'database': args.database})
     working_dir = mkdtemp(prefix='vxRestore_', dir=args.temp_dir)
-    utils.restore_direct(args.backup, odoo_cfg, working_dir, args.from_docker)
+    utils.restore_direct(args.backup, odoo_cfg, working_dir)
 
 if __name__ == '__main__':
     logger.info("Starting backup process")

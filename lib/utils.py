@@ -19,10 +19,34 @@ import docker.errors
 from tempfile import gettempdir
 import base64
 import zipfile
+import subprocess
+import re
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('utils')
+
+
+def check_installation():
+    """ This is a little helper that mus be executed before everything else just to check 
+        if all dependencies are according to the espected.
+        The docker version is gotten from console and not from docker-py interface because 
+        if it is too old the dockerpy will fail
+    """
+    if docker.__version__ != "1.2.3":
+        logger.error(("Docker-py version must be 1.2.3 and yours is %s,"
+                      "please install the proper one"), docker.__version__)
+        raise Exception("docker-py version != 1.2.3")
+    logger.info("Docker-py version %s", docker.__version__)
+    out, err = subprocess.Popen(["docker", "--version"], stdout=subprocess.PIPE).communicate()
+    res = re.search(".*(\d+\.\d+\.\d+).*", out) 
+    if res:
+        if res.group(1).strip() < "1.5.0":
+            logger.error("Docker version must be > 1.5.0, please install/upgrade to the proper one")
+            raise Exception("docker version <= 1.5.0")
+        logger.info("Docker version %s", res.group(1).strip())
+    else:
+        raise Exception("Docker version could not be determined")
 
 
 def save_json(info, filename):
@@ -351,7 +375,7 @@ def decode_b64_file(src, dst):
                 destination_file.write(base64.b64decode(line))
 
 
-def restore_direct(backup, odoo_config, working_dir, container_name=None):
+def restore_direct(backup, odoo_config, working_dir):
     """ Restore a pg_dump in sql format or b64 generated with the odoo webservice
 
     Args:
@@ -379,8 +403,8 @@ def restore_direct(backup, odoo_config, working_dir, container_name=None):
             return None
         dump_name = os.path.join(dest_dir, 'dump.sql')
     pgrestore_database(dump_name, odoo_config)
-    if container_name:
-        restore_docker_filestore(filestore_folder, odoo_config.get('database'), container_name)
+    if 'odoo_container' in odoo_config:
+        restore_docker_filestore(filestore_folder, odoo_config)
     else:
         restore_instance_filestore(filestore_folder, odoo_config)
     return True
@@ -403,17 +427,18 @@ def pase_odoo_configfile(filename):
         logger.error('configuration file "%s" not found', filename)
         return None
     if config.get('options', 'db_host') != 'False':
-        res.update({'db_host': config.get('options', 'db_host')})
+        res.update({'db_host' : config.get('options', 'db_host')})
     else:
-        res.update({'db_host': 'localhost'})
+        res.update({'db_host' : 'localhost'})
     if config.get('options', 'db_port') != 'False':
-        res.update({'db_port': config.get('options', 'db_port')})
+        res.update({'db_port' : config.get('options', 'db_port')})
     else:
-        res.update({'db_port': 5432})
-    res.update({'db_user': config.get('options', 'db_user')})
-    res.update({'db_password': config.get('options', 'db_password')})
-    res.update({'data_dir': config.get('options', 'data_dir')})
-
+        res.update({'db_port' : 5432})
+    res.update({'db_user' : config.get('options', 'db_user')})
+    res.update({'db_password' : config.get('options', 'db_password')})
+    res.update({'data_dir' : config.get('options', 'data_dir')})
+    res.update({'odoo_cfg_file': filename})
+    
     return res
 
 
@@ -428,7 +453,8 @@ def pgdump_database(dest_folder, database_config):
     """
     logger.debug("Dumping database %s into %s folder", database_config.get('database'), dest_folder)
     dump_name = os.path.join(dest_folder, 'database_dump.sql')
-    os.environ['PGPASSWORD'] = database_config.get('db_password')
+    if database_config.get('db_password') != 'False':
+        os.environ['PGPASSWORD'] = database_config.get('db_password')
     dump_cmd = 'pg_dump {database} -O -f {0} -p {db_port} -h {db_host} -U {db_user}' \
         .format(dump_name, **database_config)
     shell = spur.LocalShell()
@@ -502,16 +528,17 @@ def get_docker_env(container_name, docker_url="unix://var/run/docker.sock"):
     return res
 
 
-def restore_docker_filestore(src_folder, database_name, container_name,
+def restore_docker_filestore(src_folder, odoo_config,
                              docker_url="unix://var/run/docker.sock"):
     """ Restore a filestore folder into a docker container that is already running
         and has the /tmp folder mounted as a volume un the host
 
     Args:
         src_folder (str): Full path to the folder thar contains the filestore you want to restore
-        container_name (str): container name or id
+        odoo_config (dict): condiguration
         docker_url (str): url to use in docker cli client
     """
+    container_name = odoo_config.get('odoo_container')
     cli = Client(base_url=docker_url, timeout=3000)
     try:
         inspected = cli.inspect_container(container_name)
@@ -537,15 +564,32 @@ def restore_docker_filestore(src_folder, database_name, container_name,
         return None
     shutil.move(src_folder, dest_folder)
     env_vars = get_docker_env(container_name)
-    odoo_config = env_vars.get('ODOO_CONFIG_FILE')
-    res = cli.execute(container_name, "cat {}".format(odoo_config))
-    for i in res.split('\n'):
-        if i.strip().startswith("data_dir"):
-            data_dir = i.split("=")[1].strip()
+    odoo_config_file = env_vars.get('ODOO_CONFIG_FILE')
+    try:
+        res = cli.copy(container_name, odoo_config_file)
+    except docker.errors.APIError as error:
+        if "Could not find the file" in error.message:
+            logger.error("Odoo config file is not in the path '%s'", odoo_config_file)
+        else:
+            logger.error("Could not get the config file '%s'", error.message)
+        return None
+    for line in res.data.split('\n'):
+        if line.strip().startswith("data_dir"):
+            data_dir = line.split("=")[1].strip()
             break
-    fs_name = os.path.join(data_dir, "filestore", database_name)    
-    cli.execute(container_name, "mv /tmp/filestore {}".format(fs_name))
-    cli.execute(container_name, "chown -R {0}:{0} {1}".format(env_vars.get('ODOO_USER'), fs_name))
+    fs_name = os.path.join(data_dir, "filestore", odoo_config.get('database'))
+    exec_id = cli.exec_create(container_name, "rm -rf {0}".format(fs_name))
+    res = cli.exec_start(exec_id.get('Id'))
+    if res:
+        logger.info("Removing previous filestore returned '%s'", res)
+    exec_id = cli.exec_create(container_name, "mv /tmp/filestore {0}".format(fs_name))
+    res = cli.exec_start(exec_id.get('Id'))
+    if res:
+        logger.info("Moving filestore returned '%s'", res)
+    exec_id = cli.exec_create(container_name, "chown -R {0}:{0} {1}".format(env_vars.get('ODOO_USER'), fs_name))
+    res = cli.exec_start(exec_id.get('Id'))
+    if res:
+        logger.info("Changing filestore owner returned '%s'", res)
 
 
 def restore_instance_filestore(src_folder, odoo_config):
@@ -642,6 +686,7 @@ def parse_docker_config(container_name, docker_url="unix://var/run/docker.sock")
     if not res.get('data_dir'):
         logger.error(('The attachments dicrectory was not mounted from the host,',
                       'wont be able to backup attachments'))
+    res.update({'odoo_container': container_name})
     return res
 
 
@@ -660,30 +705,41 @@ def dropdb_direct(database_config):
     try:
         shell.run(shlex.split(dropdb_cmd))
     except spur.results.RunProcessError as error:
+        if 'does not exist' in error.stderr_output:
+            return True
         logger.error('Could not drop database, error message: %s', error.stderr_output)
         return None
     else:
         return True
 
 
-def remove_attachments(odoo_config, container=False):
+def remove_attachments(odoo_config):
     """Remove attachements dolder
     Args:
-        odoo_config (dict): Odoo condiguration
-        container (str): Docker container name or id
+        odoo_config (dict): Odoo configuration
     """
-    if container:
-        env_vars = get_docker_env(container)
+    if 'odoo_container' in odoo_config:
+        env_vars = get_docker_env(odoo_config.get('odoo_container'))
         odoo_config_file = env_vars.get('ODOO_CONFIG_FILE')
         cli = Client()
+        try:
+            res = cli.copy(odoo_config.get('odoo_container'), odoo_config_file)
+        except docker.errors.APIError as error:
+            if "Could not find the file" in error.message:
+                logger.error("Odoo config file is not in the path '%s'", odoo_config_file)
+            else:
+                logger.error("Could not get the config file '%s'", error.message)
+            return None
 
-        res = cli.execute(container, "cat {}".format(odoo_config_file))
-        for i in res.split('\n'):
+        for i in res.data.split('\n'):
             if i.strip().startswith("data_dir"):
                 data_dir = i.split("=")[1].strip()
                 break
         fs_name = os.path.join(data_dir, "filestore", odoo_config.get('database'))
-        cli.execute(container, "rm -r {}".format(fs_name))
+        exec_id = cli.exec_create(odoo_config.get('odoo_container'), "rm -r {}".format(fs_name))
+        res = cli.exec_start(exec_id.get('Id'))
+        if res:
+            logger.info("Removing previous filestore returned '%s'", res)
     else:
         fs_name = os.path.join(odoo_config.get('data_dir'),
                                'filestore',

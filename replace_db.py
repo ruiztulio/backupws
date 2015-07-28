@@ -28,7 +28,7 @@ def main(main_args):
                help=('Docker container which has the configuration',
                      ' (mutually exclusive with -o option)'),
                default=False)
-    parser.add('-c', '--config_file', 
+    parser.add('-c', '--config_file',
                help='Config file path', is_config_file=True)
     parser.add("-t", "--temp_dir", help="Temp working dir",
                default=gettempdir())
@@ -36,10 +36,11 @@ def main(main_args):
                default=False, required=True)
 
     args = parser.parse_args(main_args)
+    utils.check_installation()
     if (args.from_docker and args.odoo_configfile) or \
         (not args.from_docker and not args.odoo_configfile):
         print "You must specify one of two options -o or -f\n\n"
-        print(parser.format_help())
+        print parser.format_help()
         return 1
     if args.from_docker:
         odoo_cfg = utils.parse_docker_config(args.from_docker)
@@ -48,8 +49,8 @@ def main(main_args):
     odoo_cfg.update({'database': args.database})
     working_dir = mkdtemp(prefix='vxRestore_', dir=args.temp_dir)
     if utils.dropdb_direct(odoo_cfg):
-        utils.remove_attachments(odoo_cfg, args.from_docker)
-        utils.restore_direct(args.backup, odoo_cfg, working_dir, args.from_docker)
+        utils.remove_attachments(odoo_cfg)
+        utils.restore_direct(args.backup, odoo_cfg, working_dir)
 
 if __name__ == '__main__':
     logger.info("Starting backup process")

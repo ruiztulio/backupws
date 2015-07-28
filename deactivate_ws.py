@@ -39,11 +39,19 @@ def deactivate(db_name, user_login, user_password,
         else:
             raise
 
-    logger.info("Deactivating mail servers")
+    logger.info("Deactivating outgoing mail servers")
     mail_ids = oerp.search('ir.mail_server', [('active', '=', True)])
     if mail_ids:
-        logger.debug("Mail server ids %s", str(mail_ids))
-        oerp.write('ir.mail_server', mail_ids, {'active': False})
+        logger.debug("Out mail server ids %s", str(mail_ids))
+        oerp.write('fetchmail_server', mail_ids, 
+                   {'active': False, 'user': 'user', 'password': 'pass'})
+
+    logger.info("Deactivating incoming mail servers")
+    mail_ids = oerp.search('fetchmail.server', [('active', '=', True)])
+    if mail_ids:
+        logger.debug("In mail server ids %s", str(mail_ids))
+        oerp.write('fetchmail.server', mail_ids, 
+                   {'active': False, 'smtp_user': 'user', 'smtp_pass': 'pass'})
 
     partner = oerp.browse('res.partner', 1)
     if hasattr(partner, 'opt_out'):
