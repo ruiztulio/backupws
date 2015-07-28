@@ -7,12 +7,12 @@ backup files
 import os
 import datetime
 import logging
-import argparse
+import configargparse
 
 from lib import utils
 from deactivate_ws import deactivate
 
-parser = argparse.ArgumentParser()
+parser = configargparse.ArgumentParser()
 action = parser.add_mutually_exclusive_group(required=True)
 action.add_argument("-f", "--backup-file", help="Path of backup file")
 action.add_argument("-p", "--backup-path",
@@ -81,7 +81,7 @@ def restore_database(db_name, db_config, dump_dest, port):
     :param dump_dest: Dump to be used
     :param port: Config Port from db_config used for connection
     :return: 1 if connection failed, 2 if database exists, db_name if
-            succesfull
+             succesfull
     """
     if not utils.test_connection(db_name, db_config['host'],
                                  db_config['port'][port], db_config['user'],

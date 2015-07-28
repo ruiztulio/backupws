@@ -4,7 +4,7 @@
 This script is a PoC to make Odoo DB dumps using Oerplib
 """
 import logging
-import argparse
+import configargparse
 import sys
 from lib import utils
 
@@ -16,7 +16,7 @@ logger = logging.getLogger('backup')
 def main(main_args):
     """ Main function
     """
-    parser = argparse.ArgumentParser()
+    parser = configargparse.ArgumentParser()
     parser.add_argument("dbs", help="Comma separated dabases names to backup",
                         default=False)
     parser.add_argument("-t", "--temp_dir", help="Temp working dir",
