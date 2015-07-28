@@ -39,8 +39,11 @@ def deactivate(sqls, str_conn, actions, rpass=False):
             logger.info(' - Executing %s ', name)
             logger.debug('Query: "%s"', sqls.get(name))
             cur.execute(sqls.get(name))
-        except Exception as error:
-            logger.warn("Couldn't be executed in database: %s", error.message)
+        except psycopg2.ProgrammingError as error:
+            if 'does not exist' in error.message:
+                logger.warn("Couldn't be executed in database: %s", error.message.strip())
+            else:
+                raise
 
     if rpass:
         logger.info("Updating users' passwords")
