@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 
 import smtplib
-import argparse
+import configargparse
 import logging
 from sh import df
 from sh import uname
 
-parser = argparse.ArgumentParser()
+parser = configargparse.ArgumentParser()
 parser.add_argument("--server", help="SMTP Server:Port",
                     default="smtp.gmail.com:587")
 parser.add_argument("-F", "--From", help="Sender's email address",
