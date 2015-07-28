@@ -28,8 +28,8 @@ def deactivate(sqls, str_conn, actions, rpass=False):
         logger.debug('Connection string: "%s"', str_conn)
         conn = psycopg2.connect(str_conn)
         conn.set_isolation_level(0)
-    except Exception as e:
-        logger.exception('Connection not established: %s', e.message)
+    except Exception as error:
+        logger.exception('Connection not established: %s', error.message)
         raise
 
     cur = conn.cursor()
@@ -39,8 +39,8 @@ def deactivate(sqls, str_conn, actions, rpass=False):
             logger.info(' - Executing %s ', name)
             logger.debug('Query: "%s"', sqls.get(name))
             cur.execute(sqls.get(name))
-        except Exception as e:
-            logger.warn("Couldn't be executed in database: %s", e.message)
+        except Exception as error:
+            logger.warn("Couldn't be executed in database: %s", error.message)
 
     if rpass:
         logger.info("Updating users' passwords")
@@ -51,9 +51,9 @@ def deactivate(sqls, str_conn, actions, rpass=False):
                 logger.info(' - Updating %s ', user[0])
                 cur.execute("UPDATE res_user SET password = '%s' WHERE id = %s" % \
                             str(uuid.uuid4().get_hex().upper()[0:6]), user[0])
-            except Exception as e:
+            except Exception as error:
                 logger.exception("Couldn't be executed in database: %s",
-                                 e.message)
+                                 error.message)
                 raise
     cur.close()
     conn.close()
