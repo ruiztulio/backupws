@@ -105,7 +105,7 @@ All these options can be consulted any time by just running:
 
     python deactivate_ws.py --help
 
-## Without use ws
+## Using deactivate queries
 
 To deactivate a database without ws run:
 
@@ -175,7 +175,7 @@ Other parameters that can be used:
 * --logfile: File where store logs
 * --server: SMTP service server in the form "server:port"
 
-## Branches
+## BRANCHES
 
 To save branches' info into a json file::
 
