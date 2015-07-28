@@ -81,7 +81,7 @@ def restore_database(db_name, db_config, dump_dest, port):
     :param dump_dest: Dump to be used
     :param port: Config Port from db_config used for connection
     :return: 1 if connection failed, 2 if database exists, db_name if
-            succesfull
+             succesfull
     """
     if not utils.test_connection(db_name, db_config['host'],
                                  db_config['port'][port], db_config['user'],

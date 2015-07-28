@@ -47,13 +47,13 @@ To build branches using Json file made with **branches.py**::
 
     python branches.py -f json_file -p path_of_repo_structure -l
 
-To update branches using Json file::
+To update branches to commits specified in Json file::
 
     python branches.py -f json_file -p path_of_repo_structure --repo comma_separated_list_of_repo -u
 
-To reset branches to commits in Json file::
+To pull branches from their origin urls::
 
-    python branches.py -f json_file -p path_of_repo_structure --repo comma_separated_list_of_repo -r
+    python branches.py -f json_file -p path_of_repo_structure --repo comma_separated_list_of_repo --pull
 
 If path_of_repo_structure is not specified, current dir will be used
 Json_file is a mandatory field
