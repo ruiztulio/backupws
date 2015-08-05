@@ -561,7 +561,7 @@ def restore_docker_filestore(src_folder, odoo_config,
     try:
         shutil.move(src_folder, dest_folder)
     except IOError as error:
-        if "No such file or directory" in error.message:
+        if "No such file or directory" in error.strerror:
             logger.warn("No filestore found in the backup file")
         else:
             raise
@@ -570,7 +570,7 @@ def restore_docker_filestore(src_folder, odoo_config,
     try:
         res = cli.copy(container_name, odoo_config_file)
     except docker.errors.APIError as error:
-        if "Could not find the file" in error.strerror:
+        if "Could not find the file" in error.message:
             logger.error("Odoo config file is not in the path '%s'", odoo_config_file)
         else:
             logger.error("Could not get the config file '%s'", error.message)
