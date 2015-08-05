@@ -68,7 +68,7 @@ def save_json(info, filename):
             if not os.path.isabs(filename):
                 filename = os.path.abspath(filename)
             logger.debug("File saved")
-    except Exception as error:
+    except IOError as error:
         logger.error(error)
     return filename
 
@@ -82,8 +82,8 @@ def load_json(filename):
     Returns: Object loaded
     """
     logger.debug("Opening file %s", filename)
-    with open(filename, "r") as fname:
-        info = json.load(fname)
+    with open(filename, "r") as dest:
+        info = json.load(dest)
         logger.debug("File loaded")
         return info
 
@@ -97,10 +97,13 @@ def clean_files(files):
     items = files if hasattr(files, '__iter__') else [files]
     for item in items:
         fname = item[0] if hasattr(item, '__iter__') else item
-        if os.path.isfile(fname):
-            os.remove(fname)
-        elif os.path.isdir(fname):
-            shutil.rmtree(fname)
+        if fname != "/":
+            if os.path.isfile(fname):
+                os.remove(fname)
+            elif os.path.isdir(fname):
+                shutil.rmtree(fname)
+        else:
+            logger.error("Invalid target path: '/'. Are you trying to delete your root path?")
 
 
 def simplify_path(b_info):
@@ -113,19 +116,24 @@ def simplify_path(b_info):
         List of dictionaries with branches' info
     """
     logger.debug("Deleting all common branches' path")
-    repeated = True
-    while repeated:
-        piece_path = []
-        for branch in b_info:
-            piece_path.append(branch['path'].split('/', 1)[0])
-        word = piece_path[0]
+    if len(b_info) > 1:
         repeated = True
-        for each in piece_path:
-            if each != word:
-                repeated = False
-        if repeated:
+        while repeated:
+            piece_path = []
             for branch in b_info:
-                branch.update({'path': branch['path'].split('/', 1)[1]})
+                piece_path.append(branch['path'].split('/', 1)[0])
+            word = piece_path[0]
+            repeated = True
+            for each in piece_path:
+                if each != word:
+                    repeated = False
+            if repeated:
+                for branch in b_info:
+                    branch.update({'path': branch['path'].split('/', 1)[1]})
+    else:
+        if len(b_info) > 0:
+            branch = b_info[0]
+            branch.update({'path': os.path.basename(branch['path'])})
     logger.debug("Common paths deleted")
     return b_info
 
@@ -560,9 +568,16 @@ def restore_docker_filestore(src_folder, odoo_config,
         return None
     try:
         shutil.move(src_folder, dest_folder)
+    except shutil.Error as error:
+        if "already exists" in error.message:
+            logger.info("%s folder already exists, replacing", dest_folder)
+            clean_files(dest_folder)
+            shutil.move(src_folder, dest_folder)
+        else:
+            raise
     except IOError as error:
         if "No such file or directory" in error.strerror:
-            logger.warn("No filestore found in the backup file")
+            logger.warn("No filestore in the backup file")
         else:
             raise
     env_vars = get_docker_env(container_name)
@@ -687,8 +702,8 @@ def parse_docker_config(container_name, docker_url="unix://var/run/docker.sock")
         logger.error('Datadir not found, wont be able to backup attachments')
 
     if not res.get('data_dir'):
-        logger.error(('The attachments dicrectory was not mounted from the host,',
-                      'wont be able to backup attachments'))
+        logger.error(('The attachments dicrectory was not mounted from the host,'
+                      ' wont be able to backup attachments'))
     res.update({'odoo_container': container_name})
     return res
 
@@ -703,7 +718,7 @@ def dropdb_direct(database_config):
     if database_config.get('db_password') != 'False':
         os.environ['PGPASSWORD'] = database_config.get('db_password')
     dropdb_cmd = 'dropdb {database} -U {db_user} -p {db_port} -h {db_host}' \
-        .format(**database_config)
+                 .format(**database_config)
     shell = spur.LocalShell()
     try:
         shell.run(shlex.split(dropdb_cmd))
