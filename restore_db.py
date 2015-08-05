@@ -45,6 +45,7 @@ def main(main_args):
     odoo_cfg.update({'database': args.database})
     working_dir = mkdtemp(prefix='vxRestore_', dir=args.temp_dir)
     utils.restore_direct(args.backup, odoo_cfg, working_dir)
+    utils.clean_files(working_dir)
 
 if __name__ == '__main__':
     logger.info("Starting backup process")
