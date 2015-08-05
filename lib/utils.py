@@ -570,7 +570,7 @@ def restore_docker_filestore(src_folder, odoo_config,
     try:
         res = cli.copy(container_name, odoo_config_file)
     except docker.errors.APIError as error:
-        if "Could not find the file" in error.message:
+        if "Could not find the file" in error.strerror:
             logger.error("Odoo config file is not in the path '%s'", odoo_config_file)
         else:
             logger.error("Could not get the config file '%s'", error.message)
