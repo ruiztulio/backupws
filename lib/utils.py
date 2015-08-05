@@ -562,7 +562,15 @@ def restore_docker_filestore(src_folder, odoo_config,
         logger.error("Could not restore filestore into %s container", container_name)
         logger.error("You should run the docker with a volume in /tmp")
         return None
-    shutil.move(src_folder, dest_folder)
+    try:
+        shutil.move(src_folder, dest_folder)
+    except shutil.Error as error:
+        if "already exists" in error.message:
+            logger.info("%s folder already exists, replacing", dest_folder)
+            clean_files(dest_folder)
+            shutil.move(src_folder, dest_folder)
+        else:
+            raise
     env_vars = get_docker_env(container_name)
     odoo_config_file = env_vars.get('ODOO_CONFIG_FILE')
     try:
