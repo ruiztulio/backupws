@@ -14,6 +14,7 @@ logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('backup')
 
+
 def main(main_args):
     """ Main function
     """
@@ -38,7 +39,7 @@ def main(main_args):
     args = parser.parse_args(main_args)
     utils.check_installation()
     if (args.from_docker and args.odoo_configfile) or \
-        (not args.from_docker and not args.odoo_configfile):
+       (not args.from_docker and not args.odoo_configfile):
         print "You must specify one of two options -o or -f\n\n"
         print parser.format_help()
         return 1
@@ -51,6 +52,7 @@ def main(main_args):
     if utils.dropdb_direct(odoo_cfg):
         utils.remove_attachments(odoo_cfg)
         utils.restore_direct(args.backup, odoo_cfg, working_dir)
+    utils.clean_files(working_dir)
 
 if __name__ == '__main__':
     logger.info("Starting backup process")
