@@ -51,6 +51,7 @@ def main(main_args):
     if utils.dropdb_direct(odoo_cfg):
         utils.remove_attachments(odoo_cfg)
         utils.restore_direct(args.backup, odoo_cfg, working_dir)
+    utils.clean_files(working_dir)
 
 if __name__ == '__main__':
     logger.info("Starting backup process")
