@@ -558,7 +558,13 @@ def restore_docker_filestore(src_folder, odoo_config,
         logger.error("Could not restore filestore into %s container", container_name)
         logger.error("You should run the docker with a volume in /tmp")
         return None
-    shutil.move(src_folder, dest_folder)
+    try:
+        shutil.move(src_folder, dest_folder)
+    except IOError as error:
+        if "No such file or directory" in error.message:
+            logger.warn("No filestore found in the backup file")
+        else:
+            raise
     env_vars = get_docker_env(container_name)
     odoo_config_file = env_vars.get('ODOO_CONFIG_FILE')
     try:
