@@ -28,9 +28,9 @@ logger = logging.getLogger('utils')
 
 
 def check_installation():
-    """ This is a little helper that mus be executed before everything else just to check 
+    """ This is a little helper that mus be executed before everything else just to check
         if all dependencies are according to the espected.
-        The docker version is gotten from console and not from docker-py interface because 
+        The docker version is gotten from console and not from docker-py interface because
         if it is too old the dockerpy will fail
     """
     if docker.__version__ != "1.2.3":
@@ -39,10 +39,11 @@ def check_installation():
         raise Exception("docker-py version != 1.2.3")
     logger.info("Docker-py version %s", docker.__version__)
     out, _ = subprocess.Popen(["docker", "--version"], stdout=subprocess.PIPE).communicate()
-    res = re.search(r".*(\d+\.\d+\.\d+).*", out) 
+    res = re.search(r".*(\d+\.\d+\.\d+).*", out)
     if res:
         if res.group(1).strip() < "1.5.0":
-            logger.error("Docker version must be > 1.5.0, please install/upgrade to the proper one")
+            logger.error(("Docker version must be > 1.5.0,"
+                          " please install/upgrade to the proper one"))
             raise Exception("docker version <= 1.5.0")
         logger.info("Docker version %s", res.group(1).strip())
     else:
@@ -215,7 +216,7 @@ def dump_database(dest_folder, database_name, super_user_pass, host, port):
     Args:
         dest_folder (str): Folder where the function will save the dump
         database_name (str): Database name that will be dumped
-        super_user_pass (str): Super user password to be used 
+        super_user_pass (str): Super user password to be used
                                to connect with odoo instance
         host (str): Host name or IP address to connect
         port (int): Port number which Odoo instance is listening to
@@ -239,11 +240,12 @@ def generate_backup_name(database_name, reason=False):
        database_name_YYYYmmdd_HHMMSS
     """
     if reason:
-        res = '%s_%s_%s'% \
+        res = '%s_%s_%s' % \
                     (database_name, reason, datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
     else:
-        res = '%s_%s'%(database_name, datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
+        res = '%s_%s' % (database_name, datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
     return res
+
 
 def backup_database_ws(database_name, dest_folder, user, password,
                        host, port, reason=False, tmp_dir=False):
@@ -279,7 +281,7 @@ def backup_databases(databases_list, dest_folder,
     """ Receive a list of databases and backup up them all
 
     Args:
-        databases_list (list): The database list name that will be 
+        databases_list (list): The database list name that will be
     """
     for database in databases_list:
         backup_database_ws(database, dest_folder, user, password, host, port,
@@ -349,11 +351,11 @@ def test_connection(db_name, host=False, port=8069, user=False,
         return False
     else:
         if oerp_version:
-            logger.info("An Odoo v%s server is available" + \
-                        " and linstening into %s port", oerp_version, port)
+            logger.info(("An Odoo v%s server is available"
+                         " and linstening into %s port"), oerp_version, port)
         else:
-            logger.warn("Connection could be stablished," + \
-                        "but for some reason version number couldn't be gotten")
+            logger.warn(("Connection could be stablished,"
+                         " but for some reason version number couldn't be gotten"))
     if not only_connection:
         try:
             oerp.login(user, password, db_name)
@@ -361,8 +363,8 @@ def test_connection(db_name, host=False, port=8069, user=False,
             logger.error("%s, please check your parameters and try again", error_obj.message)
             return False
         else:
-            logger.info("User '%s' could connect to the" + \
-                        "instance properly with the supplied password", user)
+            logger.info(("User '%s' could connect to the"
+                         "instance properly with the supplied password"), user)
     return True
 
 
@@ -382,7 +384,7 @@ def restore_direct(backup, odoo_config, working_dir):
         backup (str): full path to the backup you want to restore
         odoo_config (dict): dictionary with the required odoo condiguration
         working_dir (str): full path to the temp dicrectory where the files will be extracted
-        container_name (str): optional docker container name or id that contains 
+        container_name (str): optional docker container name or id that contains
                               the configuration to be used
     """
     logger.info('Extracting files')
@@ -427,18 +429,18 @@ def pase_odoo_configfile(filename):
         logger.error('configuration file "%s" not found', filename)
         return None
     if config.get('options', 'db_host') != 'False':
-        res.update({'db_host' : config.get('options', 'db_host')})
+        res.update({'db_host': config.get('options', 'db_host')})
     else:
-        res.update({'db_host' : 'localhost'})
+        res.update({'db_host': 'localhost'})
     if config.get('options', 'db_port') != 'False':
-        res.update({'db_port' : config.get('options', 'db_port')})
+        res.update({'db_port': config.get('options', 'db_port')})
     else:
-        res.update({'db_port' : 5432})
-    res.update({'db_user' : config.get('options', 'db_user')})
-    res.update({'db_password' : config.get('options', 'db_password')})
-    res.update({'data_dir' : config.get('options', 'data_dir')})
+        res.update({'db_port': 5432})
+    res.update({'db_user': config.get('options', 'db_user')})
+    res.update({'db_password': config.get('options', 'db_password')})
+    res.update({'data_dir': config.get('options', 'data_dir')})
     res.update({'odoo_cfg_file': filename})
-    
+
     return res
 
 
@@ -451,7 +453,8 @@ def pgdump_database(dest_folder, database_config):
     Returns:
         The full dump path and name with .sql extension
     """
-    logger.debug("Dumping database %s into %s folder", database_config.get('database'), dest_folder)
+    logger.debug("Dumping database %s into %s folder",
+                 database_config.get('database'), dest_folder)
     dump_name = os.path.join(dest_folder, 'database_dump.sql')
     if database_config.get('db_password') != 'False':
         os.environ['PGPASSWORD'] = database_config.get('db_password')
@@ -481,7 +484,8 @@ def pgrestore_database(dump_name, database_config):
     logger.debug("Creating database %s", database_config.get('database'))
     if database_config.get('db_password') != 'False':
         os.environ['PGPASSWORD'] = database_config.get('db_password')
-    createdb_cmd = 'createdb {database} -T template1 -E utf8 -U {db_user} -p {db_port} -h {db_host}'
+    createdb_cmd = ('createdb {database} -T template1 -E utf8'
+                    ' -U {db_user} -p {db_port} -h {db_host}')
     createdb_cmd = createdb_cmd.format(**database_config)
     restore_cmd = 'psql {database} -f {0} -p {db_port} -h {db_host} -U {db_user}' \
         .format(dump_name, **database_config)
@@ -571,6 +575,11 @@ def restore_docker_filestore(src_folder, odoo_config,
             shutil.move(src_folder, dest_folder)
         else:
             raise
+    except IOError as error:
+        if "No such file or directory" in error.strerror:
+            logger.warn("No filestore in the backup file")
+        else:
+            raise
     env_vars = get_docker_env(container_name)
     odoo_config_file = env_vars.get('ODOO_CONFIG_FILE')
     try:
@@ -594,8 +603,8 @@ def restore_docker_filestore(src_folder, odoo_config,
     res = cli.exec_start(exec_id.get('Id'))
     if res:
         logger.info("Moving filestore returned '%s'", res)
-    exec_id = cli.exec_create(container_name, "chown -R {0}:{0} {1}" \
-        .format(env_vars.get('ODOO_USER'), fs_name))
+    exec_id = cli.exec_create(container_name, "chown -R {0}:{0} {1}"
+                              .format(env_vars.get('ODOO_USER'), fs_name))
     res = cli.exec_start(exec_id.get('Id'))
     if res:
         logger.info("Changing filestore owner returned '%s'", res)
@@ -614,14 +623,13 @@ def restore_instance_filestore(src_folder, odoo_config):
     shutil.move(src_folder, dest_folder)
 
 
-def backup_database_direct(odoo_config, dest_folder, reason=False,
-                           tmp_dir=False):
+def backup_database_direct(odoo_config, dest_folder, reason=False, tmp_dir=False):
     """ Receive database name and back it up
 
     Args:
         odoo_config (dict): Odoo config for the backup process
         dest_folder (str): Folder where the backup will be stored
-        reason (str): Optional parameter that is used in case 
+        reason (str): Optional parameter that is used in case
                       there is a particular reason for the backup
         tmp_dir (str): Optional parameter to store the temporary working dir, default is /tmp
 
@@ -644,7 +652,7 @@ def backup_database_direct(odoo_config, dest_folder, reason=False,
             logger.debug('Attachements folder "%s"', attachments_folder)
             files2backup.append((attachments_folder, 'filestore'))
         else:
-            logger.warn(('Folder "%s" does not exists,', 
+            logger.warn(('Folder "%s" does not exists,'
                          ' attachements are not being added to the backup'), attachments_folder)
     else:
         logger.info('There is not attachements folder to backup')
@@ -654,6 +662,7 @@ def backup_database_direct(odoo_config, dest_folder, reason=False,
     logger.info('Compressed backup, cleaning')
     clean_files(dump_name)
     return full_name
+
 
 def parse_docker_config(container_name, docker_url="unix://var/run/docker.sock"):
     """Parse env vars from a container to get the nedded parameters to dump the database
