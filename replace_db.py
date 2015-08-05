@@ -14,6 +14,7 @@ logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('backup')
 
+
 def main(main_args):
     """ Main function
     """
