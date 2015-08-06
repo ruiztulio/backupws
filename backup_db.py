@@ -39,6 +39,9 @@ def main(main_args):
     parser.add("-r", "--reason",
                help="Reason why are  making this backup",
                default=False)
+    parser.add("-F", "--format",
+               help="Compression format you wish (only bz2 and gz are supported)",
+               default='bz2')
 
     args = parser.parse_args(main_args)
     utils.check_installation()
@@ -47,7 +50,8 @@ def main(main_args):
     elif args.from_docker:
         odoo_cfg = utils.parse_docker_config(args.from_docker)
     odoo_cfg.update({'database': args.database})
-    utils.backup_database_direct(odoo_cfg, args.backup_dir, reason=args.reason)
+    utils.backup_database_direct(odoo_cfg, args.backup_dir,
+                                 reason=args.reason, cformat=args.format)
     #utils.pase_odoo_configfile('config.conf')
 
 
