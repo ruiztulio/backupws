@@ -154,7 +154,7 @@ def name_from_url(url):
     return name
 
 
-def compress_files(name, files, dest_folder=None):
+def compress_files(name, files, dest_folder=None, cformat='bz2'):
     """ Compress a file, set of files or a folder in tar.bz2 format
 
     Args:
@@ -165,16 +165,23 @@ def compress_files(name, files, dest_folder=None):
     """
     if not dest_folder:
         dest_folder = '.'
+    if cformat not in ['bz2', 'gz']:
+        raise RuntimeError('Unknown file format "{}"'.format(cformat))
+    if cformat == 'gz':
+        fobject, modestr = tarfile.open, 'w:gz'
+    elif cformat == 'bz2':
+        fobject, modestr = tarfile.open, 'w:bz2'
     logger.debug("Generating compressed file: %s in %s folder", name, dest_folder)
-    full_name = os.path.join(dest_folder, '%s.tar.bz2' % name)
-    bz2_file = bz2.BZ2File(full_name, mode='w', compresslevel=9)
-    with tarfile.open(mode='w', fileobj=bz2_file) as tar_bz2_file:
+
+    bkp_name = '{0}.tar.{1}'.format(name, cformat)
+    full_name = os.path.join(dest_folder, bkp_name)
+
+    with fobject(full_name, mode=modestr) as tar_file:
         for fname in files:
             if hasattr(fname, '__iter__'):
-                tar_bz2_file.add(fname[0], os.path.join(name, fname[1]))
+                tar_file.add(fname[0], os.path.join(name, fname[1]))
             else:
-                tar_bz2_file.add(fname, os.path.join(name, os.path.basename(fname)))
-    bz2_file.close()
+                tar_file.add(fname, os.path.join(name, os.path.basename(fname)))
     return full_name
 
 
@@ -188,12 +195,16 @@ def decompress_files(name, dest_folder):
         The absolute path to decompressed folder or file
     """
     logger.debug("Decompressing file: %s", name)
-    bz2_file = bz2.BZ2File(name, mode='r')
-    tar = tarfile.open(mode='r', fileobj=bz2_file)
+    if name.endswith('tar.gz'):
+        fobject, modestr = tarfile.open, 'r:gz'
+    elif name.endswith('tar.bz2'):
+        fobject, modestr = tarfile.open, 'r:bz2'
+    else:
+        raise RuntimeError('Unknown file format "{}"'.format(name))
+    tar = fobject(name, mode=modestr)
     tar.extractall(dest_folder)
     name_list = tar.getmembers()
     tar.close()
-    bz2_file.close()
     base_folder = None
     for fname in name_list:
         if os.path.basename(fname.name) == 'database_dump.b64' or \
@@ -623,7 +634,8 @@ def restore_instance_filestore(src_folder, odoo_config):
     shutil.move(src_folder, dest_folder)
 
 
-def backup_database_direct(odoo_config, dest_folder, reason=False, tmp_dir=False):
+def backup_database_direct(odoo_config, dest_folder, reason=False,
+                           tmp_dir=False, cformat='bz2'):
     """ Receive database name and back it up
 
     Args:
@@ -658,7 +670,7 @@ def backup_database_direct(odoo_config, dest_folder, reason=False, tmp_dir=False
         logger.info('There is not attachements folder to backup')
     logger.info('Compressing files')
     logger.debug('Files : %s', str(files2backup))
-    full_name = compress_files(bkp_name, files2backup)
+    full_name = compress_files(bkp_name, files2backup, cformat=cformat)
     logger.info('Compressed backup, cleaning')
     clean_files(dump_name)
     return full_name
