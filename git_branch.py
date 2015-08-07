@@ -105,6 +105,35 @@ class GitBranch(object):
                                branch=branch['branch'], depth=depth)
         return repo
 
+    def set_branch(self, branch, path):
+        """Clones a single repository in the specified path with the
+        specified configuration
+
+        :param branch: Config dict of the repository
+        :param path: Path where will be cloned the repo
+        """
+        url = branch['repo_url'].get('origin',
+                                     branch['repo_url'].values()[0])
+        self.logger.debug("Cloning repo: %s - branch: %s - path: %s",
+                          url, branch['branch'],
+                          os.path.join(path, branch['path']))
+        try:
+            repo = self.__clone(path, branch)
+            current_commit = str(repo.active_branch.commit)
+            if branch['commit'] != current_commit:
+                clean_files([os.path.join(path, branch['path'])])
+                branch.update({'depth': False})
+                repo = self.__clone(path, branch)
+                try:
+                    self.__reset(os.path.join(path, branch['path']),
+                                 branch['commit'])
+                except Exception as e:
+                    self.logger.error(e)
+            self.logger.info("Branch %s cloned", branch['path'])
+            return branch['name']
+        except Exception as e:
+            self.logger.error(e)
+
     def set_branches(self, path):
         """Clones a list of repositories in the specified path with
         the specified configuration
@@ -114,27 +143,7 @@ class GitBranch(object):
         """
         res = []
         for branch in self.__info:
-            url = branch['repo_url'].get('origin',
-                                         branch['repo_url'].values()[0])
-            self.logger.debug("Cloning repo: %s - branch: %s - path: %s",
-                              url, branch['branch'],
-                              os.path.join(path, branch['path']))
-            try:
-                repo = self.__clone(path, branch)
-                current_commit = str(repo.active_branch.commit)
-                if branch['commit'] != current_commit:
-                    clean_files([os.path.join(path, branch['path'])])
-                    branch.update({'depth': False})
-                    repo = self.__clone(path, branch)
-                    try:
-                        self.__reset(os.path.join(path, branch['path']),
-                                     branch['commit'])
-                    except Exception as e:
-                        self.logger.error(e)
-                self.logger.info("Branch %s cloned", branch['path'])
-                res.append(branch['name'])
-            except Exception as e:
-                self.logger.error(e)
+            res.append(self.set_branch(branch, path))
         return res
 
     def __update(self, path, branch):
