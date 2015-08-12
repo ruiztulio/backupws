@@ -105,6 +105,37 @@ class GitBranch(object):
                                branch=branch['branch'], depth=depth)
         return repo
 
+    def set_branch(self, branch, path):
+        """Clones a single repository in the specified path with the
+        specified configuration
+
+        :param branch: Config dict of the repository
+        :param path: Path where will be cloned the repo
+        :return: Branch name if success, False otherwise
+        """
+        url = branch['repo_url'].get('origin',
+                                     branch['repo_url'].values()[0])
+        self.logger.debug("Cloning repo: %s - branch: %s - path: %s",
+                          url, branch['branch'],
+                          os.path.join(path, branch['path']))
+        try:
+            repo = self.__clone(path, branch)
+            current_commit = str(repo.active_branch.commit)
+            if branch['commit'] != current_commit:
+                clean_files([os.path.join(path, branch['path'])])
+                branch.update({'depth': False})
+                repo = self.__clone(path, branch)
+                try:
+                    self.__reset(os.path.join(path, branch['path']),
+                                 branch['commit'])
+                except Exception as e:
+                    self.logger.error(e)
+            self.logger.info("Branch %s cloned", branch['path'])
+            return branch['name']
+        except Exception as e:
+            self.logger.error(e)
+            return False
+
     def set_branches(self, path):
         """Clones a list of repositories in the specified path with
         the specified configuration
@@ -113,28 +144,45 @@ class GitBranch(object):
         :return: List of config dictionaries
         """
         res = []
+        if not os.path.exists(path):
+            os.makedirs(path)
         for branch in self.__info:
-            url = branch['repo_url'].get('origin',
-                                         branch['repo_url'].values()[0])
-            self.logger.debug("Cloning repo: %s - branch: %s - path: %s",
-                              url, branch['branch'],
-                              os.path.join(path, branch['path']))
+            success = False
+            path_dir = os.path.join(path, branch['path'])
             try:
-                repo = self.__clone(path, branch)
-                current_commit = str(repo.active_branch.commit)
-                if branch['commit'] != current_commit:
-                    clean_files([os.path.join(path, branch['path'])])
-                    branch.update({'depth': False})
-                    repo = self.__clone(path, branch)
-                    try:
-                        self.__reset(os.path.join(path, branch['path']),
-                                     branch['commit'])
-                    except Exception as e:
-                        self.logger.error(e)
-                self.logger.info("Branch %s cloned", branch['path'])
-                res.append(branch['name'])
-            except Exception as e:
-                self.logger.error(e)
+                os.makedirs(os.path.dirname(path_dir))
+            except:
+                pass
+            if os.path.basename(path_dir) in os.listdir(os.path.dirname(path_dir)):
+                self.logger.debug(("Path %s already exists."
+                                   " Checking for a git branch"),
+                                  path_dir)
+                branch_info = self.__get_branch(os.path.join(path_dir, ".git"))
+                if not branch_info.get(0, False):
+                    self.logger.info("Path %s is a git branch", path_dir)
+                    if branch_info['commit'] == branch['commit']:
+                        self.logger.info("Branch %s already configured",
+                                         branch['name'])
+                        res.append(branch['name'])
+                        success = True
+                    else:
+                        self.logger.info("Branch %s points to wrong commit",
+                                         branch['name'])
+                        self.logger.debug("Resetting branch %s",
+                                          branch['name'])
+                        try:
+                            self.__reset(path_dir, branch['commit'])
+                            res.append(branch['name'])
+                            success = True
+                            self.logger.info("Branch %s reset", branch['name'])
+                        except Exception as e:
+                            self.logger.warn(e)
+            if not success:
+                if os.path.exists(os.path.abspath(path_dir)):
+                    clean_files([os.path.abspath(path_dir)])
+                result = self.set_branch(branch, path)
+                if result:
+                    res.append(result)
         return res
 
     def __update(self, path, branch):
