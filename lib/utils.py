@@ -1,5 +1,5 @@
 """
-Vaious helper method, soon all of them will be part of vxTools,
+Various helper method, soon all of them will be part of vxTools,
 this is just a PoC to try some concepts and tests.
 """
 import shutil
@@ -29,9 +29,9 @@ logger = logging.getLogger('utils')
 
 def check_installation():
     """ This is a little helper that mus be executed before everything else just to check
-        if all dependencies are according to the espected.
+        if all dependencies are according to the expected.
         The docker version is gotten from console and not from docker-py interface because
-        if it is too old the dockerpy will fail
+        if it is too old the docker-py will fail
     """
     if docker.__version__ != "1.2.3":
         logger.error(("Docker-py version must be 1.2.3 and yours is %s,"
@@ -89,10 +89,10 @@ def load_json(filename):
 
 
 def clean_files(files):
-    """ Remove unnecesary and temporary files
+    """ Remove unnecessary and temporary files
 
     Args:
-        files (list): A list of absolute or relatove paths thar will be erased
+        files (list): A list of absolute or relative paths thar will be erased
     """
     items = files if hasattr(files, '__iter__') else [files]
     for item in items:
@@ -158,7 +158,7 @@ def compress_files(name, files, dest_folder=None, cformat='bz2'):
     """ Compress a file, set of files or a folder in tar.bz2 format
 
     Args:
-        name (str): Desired file name w/o extenssion
+        name (str): Desired file name w/o extension
         files (list): A list with the absolute o relative path to the files
                       that will be added to the compressed file
         dest_folder (str): The folder where will be stored the compressed file
@@ -244,7 +244,7 @@ def dump_database(dest_folder, database_name, super_user_pass, host, port):
 
 
 def generate_backup_name(database_name, reason=False):
-    """Generates the backup name accordint to the following standar:
+    """Generates the backup name according to the following standard:
        database_name_reason_YYYYmmdd_HHMMSS
 
        If reason is none:
@@ -268,7 +268,7 @@ def backup_database_ws(database_name, dest_folder, user, password,
         user (str): Super user login in the instance
         password (str): Super user password
         host (str): Hostname or ip where the Odoo instance is running
-        port (int): Port number where the instance is llinstening
+        port (int): Port number where the instance is listening
         reason (str): Optional parameter that is used in case 
                       there is a particular reason for the backup
         tmp_dir (str): Optional parameter to store the temporary working dir, default is /tmp
@@ -307,7 +307,7 @@ def restore_database(dest_folder, database_name, super_user_pass, host, port):
         database_name (str): The database name that will be created to restore the dump
         super_user_pass (str): Super user password of the instance
         host (str): Hostname or ip where the Odoo instance is running
-        port (int): Port number where the instance is llinstening
+        port (int): Port number where the instance is listening
     """
     logger.info("Restoring database %s", database_name)
     dump_name = os.path.join(dest_folder, 'database_dump.b64')
@@ -363,7 +363,7 @@ def test_connection(db_name, host=False, port=8069, user=False,
     else:
         if oerp_version:
             logger.info(("An Odoo v%s server is available"
-                         " and linstening into %s port"), oerp_version, port)
+                         " and listening into %s port"), oerp_version, port)
         else:
             logger.warn(("Connection could be stablished,"
                          " but for some reason version number couldn't be gotten"))
@@ -380,7 +380,7 @@ def test_connection(db_name, host=False, port=8069, user=False,
 
 
 def decode_b64_file(src, dst):
-    """ Read src base64 encoded file and output its conntent to dst file
+    """ Read src base64 encoded file and output its content to dst file
     """
     with open(src, 'r') as source_file:
         with open(dst, 'w') as destination_file:
@@ -393,8 +393,8 @@ def restore_direct(backup, odoo_config, working_dir):
 
     Args:
         backup (str): full path to the backup you want to restore
-        odoo_config (dict): dictionary with the required odoo condiguration
-        working_dir (str): full path to the temp dicrectory where the files will be extracted
+        odoo_config (dict): dictionary with the required odoo configuration
+        working_dir (str): full path to the temp directory where the files will be extracted
         container_name (str): optional docker container name or id that contains
                               the configuration to be used
     """
@@ -484,13 +484,13 @@ def pgdump_database(dest_folder, database_config):
 
 
 def pgrestore_database(dump_name, database_config):
-    """ Restores a databse dump in sql plain format, tries to create database if not exists
+    """ Restores a database dump in sql plain format, tries to create database if not exists
 
     Args:
         dump_name (str): Full path and name of the sql dump to restore
         database_config (dict): Database configuration parameters needed to execute restore
     Returns:
-        None if could not restore databse, True otherwise
+        None if could not restore database, True otherwise
     """
     logger.debug("Creating database %s", database_config.get('database'))
     if database_config.get('db_password') != 'False':
@@ -550,7 +550,7 @@ def restore_docker_filestore(src_folder, odoo_config,
 
     Args:
         src_folder (str): Full path to the folder thar contains the filestore you want to restore
-        odoo_config (dict): condiguration
+        odoo_config (dict): configuration
         docker_url (str): url to use in docker cli client
     """
     container_name = odoo_config.get('odoo_container')
@@ -661,13 +661,13 @@ def backup_database_direct(odoo_config, dest_folder, reason=False,
                                           'filestore',
                                           odoo_config.get('database'))
         if os.path.exists(attachments_folder):
-            logger.debug('Attachements folder "%s"', attachments_folder)
+            logger.debug('Attachments folder "%s"', attachments_folder)
             files2backup.append((attachments_folder, 'filestore'))
         else:
             logger.warn(('Folder "%s" does not exists,'
-                         ' attachements are not being added to the backup'), attachments_folder)
+                         ' attachments are not being added to the backup'), attachments_folder)
     else:
-        logger.info('There is not attachements folder to backup')
+        logger.info('There is not attachments folder to backup')
     logger.info('Compressing files')
     logger.debug('Files : %s', str(files2backup))
     full_name = compress_files(bkp_name, files2backup, cformat=cformat)
@@ -677,7 +677,7 @@ def backup_database_direct(odoo_config, dest_folder, reason=False,
 
 
 def parse_docker_config(container_name, docker_url="unix://var/run/docker.sock"):
-    """Parse env vars from a container to get the nedded parameters to dump the database
+    """Parse env vars from a container to get the needed parameters to dump the database
 
     Args:
         container_name: container name or id to be used for the vars extraction
@@ -723,9 +723,9 @@ def parse_docker_config(container_name, docker_url="unix://var/run/docker.sock")
 def dropdb_direct(database_config):
     """ Drop a database using the config provided
     Args:
-        database_config (dict): Database conextion parameters
+        database_config (dict): Database connection parameters
     return:
-        True if sucess or None otherwise
+        True if success or None otherwise
     """
     if database_config.get('db_password') != 'False':
         os.environ['PGPASSWORD'] = database_config.get('db_password')
@@ -744,7 +744,7 @@ def dropdb_direct(database_config):
 
 
 def remove_attachments(odoo_config):
-    """Remove attachements dolder
+    """Remove attachments folder
     Args:
         odoo_config (dict): Odoo configuration
     """
