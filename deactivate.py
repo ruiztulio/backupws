@@ -163,10 +163,10 @@ def main(main_args):
     utils.check_installation()
     logger.info('Initiating parameters')
 
+    sqls = get_sqls()
     if args.actions:
         actions = [x.strip() for x in args.actions.split(',')]
     else:
-        sqls = get_sqls()
         actions = sqls.keys()
 
     str_conn = get_conn(args)
