@@ -202,7 +202,12 @@ def decompress_files(name, dest_folder):
     else:
         raise RuntimeError('Unknown file format "{}"'.format(name))
     tar = fobject(name, mode=modestr)
-    tar.extractall(dest_folder)
+    try:
+        tar.extractall(dest_folder)
+    except IOError as error:
+        if errno == 28:
+            logger.error("No space left on device")
+        raise
     name_list = tar.getmembers()
     tar.close()
     base_folder = None
