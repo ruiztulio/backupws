@@ -205,8 +205,8 @@ def decompress_files(name, dest_folder):
     try:
         tar.extractall(dest_folder)
     except IOError as error:
-        if errno == 28:
-            logger.error("No space left on device")
+        logger.error("I/O ERROR: %s", error.strerror)
+        clean_files([dest_folder])
         raise
     name_list = tar.getmembers()
     tar.close()
