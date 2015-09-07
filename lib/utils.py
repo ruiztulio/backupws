@@ -206,6 +206,7 @@ def decompress_files(name, dest_folder):
         tar.extractall(dest_folder)
     except IOError as error:
         logger.error("I/O ERROR: %s", error.strerror)
+        clean_files([dest_folder])
         raise
     name_list = tar.getmembers()
     tar.close()
