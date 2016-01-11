@@ -670,7 +670,7 @@ def backup_database_direct(odoo_config, dest_folder, reason=False,
         logger.info('There is not attachments folder to backup')
     logger.info('Compressing files')
     logger.debug('Files : %s', str(files2backup))
-    full_name = compress_files(bkp_name, files2backup, cformat=cformat)
+    full_name = compress_files(bkp_name, files2backup, dest_folder=dest_folder, cformat=cformat)
     logger.info('Compressed backup, cleaning')
     clean_files(dump_name)
     return full_name
