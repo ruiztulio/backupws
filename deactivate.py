@@ -109,7 +109,9 @@ def get_sqls():
         'pac': "UPDATE params_pac SET active = False;",
         'cron': ("UPDATE ir_cron SET active = False"
                  " WHERE model <> 'osv_memory.autovacuum';"),
-        'notify': "UPDATE res_partner SET notify_email = 'none'"
+        'notify': "UPDATE res_partner SET notify_email = 'none'",
+        'ir_action': ("UPDATE base_action_rule SET active = False"
+                      " WHERE name LIKE '%Create Sale from Purchase%'")
     }
     return sql_dict
 
@@ -153,7 +155,7 @@ def main(main_args):
                default=False)
     parser.add("-a", "--actions",
                help="""Comma separated actions to execute (deactivates)
-                    possibles actions: partner, in_mail, out_mail, pac, cron, rpass""",
+                    possibles actions: partner, in_mail, out_mail, pac, cron, rpass, ir_action""",
                default=False)
     parser.add("-f", "--from_docker",
                help="Docker container which has the database configuration",
