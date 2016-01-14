@@ -8,6 +8,7 @@ import psycopg2
 import logging
 import uuid
 from lib import utils
+from passlib.context import CryptContext
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -72,6 +73,38 @@ def deactivate(conn, sqls, actions):
                 raise
 
 
+def change_password(conn, user_id, new_pass):
+    """ Changes the specified user_id password
+
+    :param conn: PostgreSQL connection object
+    :param user_id: Users id
+    :param new_pass: New password that will be set to the user
+    :return: True if the password was changed, None otherwise
+    """
+    logger.info('Changing password for user_id %s', user_id)
+    default_crypt_context = CryptContext(
+        ['pbkdf2_sha512', 'md5_crypt'],
+        deprecated=['md5_crypt'],
+    )
+    res_user = conn['cursor'].execute(("select password, password_crypt"
+                                       " from res_users where id = %(id)s"), {'id': user_id})
+    res = None
+    if res_user:
+        if not res_user[0].get('password') and res_user[0].get('password_crypt'):
+            logger.info('Encrypted password')
+            crypted_passwd = default_crypt_context.encrypt(new_pass)
+            conn['cursor'].execute(("update res_users set password='',"
+                                    " password_crypt=%(passwd)s where id = %(id)s"),
+                                   {'passwd': crypted_passwd, 'id': user_id})
+            res = True
+        elif res_user[0].get('password') and res_user[0].get('password_crypt') == '':
+            logger.info('Non encrypted password')
+            conn['cursor'].execute("update res_users set password=%(passwd)s where id = %(id)s",
+                                   {'passwd': new_pass, 'id': user_id})
+            res = True
+    return res
+
+
 def passwords(conn):
     """Updates users' passwords
 
@@ -84,8 +117,7 @@ def passwords(conn):
     for user in users:
         try:
             logger.info(' - Updating %s ', user[0])
-            conn['cursor'].execute("UPDATE res_user SET password = '%s' WHERE id = %s" % \
-                                   str(uuid.uuid4().get_hex().upper()[0:6]), user[0])
+            change_password(conn, user[0], str(uuid.uuid4().get_hex().upper()[0:6]))
         except Exception as error:
             logger.exception("Couldn't be executed in database: %s",
                              error.message)
@@ -160,6 +192,9 @@ def main(main_args):
     parser.add("-f", "--from_docker",
                help="Docker container which has the database configuration",
                default=False)
+    parser.add("-s", "--admin_pass",
+               help="New password for the admin user (id == 1) ",
+               default=False)
 
     args = parser.parse_args(main_args)
     utils.check_installation()
@@ -170,14 +205,15 @@ def main(main_args):
         actions = [x.strip() for x in args.actions.split(',')]
     else:
         actions = sqls.keys()
-
     str_conn = get_conn(args)
-
     conn = connect(str_conn)
     if conn:
         deactivate(conn, sqls, actions)
         if args.rpass:
             passwords(conn)
+        if args.admin_pass:
+            logger.info('Changing admin password')
+            change_password(conn, 1, args.admin_pass)
         disconnect(conn)
 
 
