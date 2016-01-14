@@ -697,7 +697,7 @@ def parse_docker_config(container_name, docker_url="unix://var/run/docker.sock")
         'db_password': env_vars.get('DB_PASSWORD'),
     }
 
-    if '172.17.42.1' == res.get('db_host'):
+    if res.get('db_host', '').startswith('172.17.'):
         res.update({'db_host': '127.0.0.1'})
 
     cli = Client(base_url=docker_url)
