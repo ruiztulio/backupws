@@ -86,24 +86,24 @@ def change_password(conn, user_id, new_pass):
         ['pbkdf2_sha512', 'md5_crypt'],
         deprecated=['md5_crypt'],
     )
-    res_user = conn['cursor'].execute(("select password, password_crypt"
-                                       " from res_users where id = %(id)s"), {'id': user_id})
+    conn['cursor'].execute(("select password, password_crypt"
+                            " from res_users where id = %(id)s"), {'id': user_id})
+    res_user = conn['cursor'].fetchone()
     res = None
     if res_user:
-        if not res_user[0].get('password') and res_user[0].get('password_crypt'):
+        if not res_user[0] and res_user[1]:
             logger.info('Encrypted password')
             crypted_passwd = default_crypt_context.encrypt(new_pass)
             conn['cursor'].execute(("update res_users set password='',"
                                     " password_crypt=%(passwd)s where id = %(id)s"),
                                    {'passwd': crypted_passwd, 'id': user_id})
             res = True
-        elif res_user[0].get('password') and res_user[0].get('password_crypt') == '':
+        elif res_user[0] and res_user[1] == '':
             logger.info('Non encrypted password')
             conn['cursor'].execute("update res_users set password=%(passwd)s where id = %(id)s",
                                    {'passwd': new_pass, 'id': user_id})
             res = True
     return res
-
 
 def passwords(conn):
     """Updates users' passwords
