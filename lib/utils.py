@@ -576,10 +576,10 @@ def restore_docker_filestore(src_folder, odoo_config,
         logger.error('Container "%s" is not running', container_name)
         return None
 
-    volumes = inspected.get('Volumes')
-    for mnt, volume in volumes.iteritems():
-        if '/tmp' == mnt and volume:
-            dest_folder = volume
+    mounts = inspected.get('Mounts')
+    for mount in mounts:
+        if '/tmp' in mount['Destination']:
+            dest_folder = mount['Source']
             break
     else:
         logger.error("Could not restore filestore into %s container", container_name)
