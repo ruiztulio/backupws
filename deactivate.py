@@ -143,7 +143,8 @@ def get_sqls():
                  " WHERE model <> 'osv_memory.autovacuum';"),
         'notify': "UPDATE res_partner SET notify_email = 'none'",
         'ir_action': ("UPDATE base_action_rule SET active = False"
-                      " WHERE name LIKE '%Create Sale from Purchase%'")
+                      " WHERE name LIKE '%Create Sale from Purchase%'"),
+        'url_freeze': "DELETE FROM ir_config_parameter WHERE key = 'web.base.url.freeze';"
     }
     return sql_dict
 

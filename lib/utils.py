@@ -12,6 +12,7 @@ import oerplib
 import socket
 import json
 import ConfigParser
+from semantic_version import Version, Spec
 import spur
 import shlex
 from docker import Client
@@ -33,15 +34,17 @@ def check_installation():
         The docker version is gotten from console and not from docker-py interface because
         if it is too old the docker-py will fail
     """
-    if docker.__version__ != "1.2.3":
-        logger.error(("Docker-py version must be 1.2.3 and yours is %s,"
-                      "please install the proper one"), docker.__version__)
-        raise Exception("docker-py version != 1.2.3")
+    docker_py_version = Spec('<1.6.0')
+    docker_version = Spec('<=1.5.0')
+    if docker_py_version.match(Version(docker.__version__)):
+        logger.error(("Docker-py version must be >= 1.6.0 and yours is %s,"
+                      " please install the proper one"), docker.__version__)
+        raise Exception("docker-py version < 1.6.0")
     logger.info("Docker-py version %s", docker.__version__)
     out, _ = subprocess.Popen(["docker", "--version"], stdout=subprocess.PIPE).communicate()
     res = re.search(r".*(\d+\.\d+\.\d+).*", out)
     if res:
-        if res.group(1).strip() < "1.5.0":
+        if docker_version.match(Version(res.group(1).strip())):
             logger.error(("Docker version must be > 1.5.0,"
                           " please install/upgrade to the proper one"))
             raise Exception("docker version <= 1.5.0")
@@ -586,8 +589,9 @@ def restore_docker_filestore(src_folder, odoo_config,
         shutil.move(src_folder, dest_folder)
     except shutil.Error as error:
         if "already exists" in error.message:
-            logger.info("%s folder already exists, replacing", dest_folder)
-            clean_files(dest_folder)
+            folder = os.path.basename(src_folder)
+            logger.info("%s folder already exists, replacing", folder)
+            clean_files(os.path.join(dest_folder, folder))
             shutil.move(src_folder, dest_folder)
         else:
             raise
@@ -710,10 +714,13 @@ def parse_docker_config(container_name, docker_url="unix://var/run/docker.sock")
             logger.error(error.explanation)
         return None
 
-    volumes = inspected.get('Volumes')
-    for mnt, volume in volumes.iteritems():
-        if '.local/share/Odoo' in mnt and volume:
-            res.update({'data_dir': volume})
+    if res.get('db_host', '') == '127.0.0.1':
+        if inspected.get('NetworkSettings').get('Ports').get('5432/tcp', False):
+            res.update({'db_port': int(inspected.get('NetworkSettings').get('Ports').get('5432/tcp')[0].get('HostPort')) })
+    mounts = inspected.get('Mounts')
+    for mount in mounts:
+        if '.local/share/Odoo' in mount['Destination']:
+            res.update({'data_dir': mount['Source']})
             break
     else:
         logger.error('Datadir not found, wont be able to backup attachments')
